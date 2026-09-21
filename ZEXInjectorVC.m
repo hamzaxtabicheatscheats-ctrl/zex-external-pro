@@ -118,86 +118,138 @@ static void ZXRedGlow(UIView*v,CGFloat r){
 @property UISwitch*sw;
 @property UILabel*statusLbl;
 @end
-@implementation ZXSlotCell{UILabel*_num,*_name,*_desc;UIView*_card;}
--(instancetype)initWithStyle:(UITableViewCellStyle)s reuseIdentifier:(NSString*)r{
-    self=[super initWithStyle:s reuseIdentifier:r];
-    self.backgroundColor=UIColor.clearColor;self.selectionStyle=0;
-    _card=ZXGlassView(14);_card.translatesAutoresizingMaskIntoConstraints=NO;
-    ZXRedGlow(_card,8);[self.contentView addSubview:_card];
-    // Animated red sweep on top edge
-    dispatch_async(dispatch_get_main_queue(),^{
-        CAGradientLayer*sw=[CAGradientLayer layer];sw.frame=CGRectMake(0,0,180,1);
-        sw.colors=@[(id)[UIColor clearColor].CGColor,(id)ZXRed.CGColor,(id)[UIColor clearColor].CGColor];
-        sw.startPoint=CGPointMake(0,.5);sw.endPoint=CGPointMake(1,.5);
-        [self->_card.layer addSublayer:sw];
-        CABasicAnimation*a=[CABasicAnimation animationWithKeyPath:@"position.x"];
-        a.fromValue=@(-90);a.toValue=@(UIScreen.mainScreen.bounds.size.width+90);
-        a.duration=3.5;a.repeatCount=HUGE_VALF;[sw addAnimation:a forKey:@"s"];
-    });
-    _num=[UILabel new];_num.translatesAutoresizingMaskIntoConstraints=NO;
-    _num.font=[UIFont monospacedSystemFontOfSize:10 weight:UIFontWeightBold];
-    _num.textColor=[UIColor colorWithWhite:1 alpha:.15];[_card addSubview:_num];
-    _name=[UILabel new];_name.translatesAutoresizingMaskIntoConstraints=NO;
-    _name.font=[UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
-    _name.textColor=UIColor.whiteColor;[_card addSubview:_name];
-    _desc=[UILabel new];_desc.translatesAutoresizingMaskIntoConstraints=NO;
-    _desc.font=[UIFont systemFontOfSize:12];_desc.textColor=ZXGray;[_card addSubview:_desc];
-    self.statusLbl=[UILabel new];self.statusLbl.translatesAutoresizingMaskIntoConstraints=NO;
-    self.statusLbl.font=[UIFont systemFontOfSize:11];self.statusLbl.textColor=ZXGray;
-    self.statusLbl.numberOfLines=2;[_card addSubview:self.statusLbl];
-    self.sw=[UISwitch new];self.sw.translatesAutoresizingMaskIntoConstraints=NO;
-    self.sw.onTintColor=ZXRed;self.sw.transform=CGAffineTransformMakeScale(.75,.75);
+@implementation ZXSlotCell {
+    UILabel *_num, *_name, *_desc;
+    UIView *_card, *_accentStrip, *_numBadge;
+}
+-(instancetype)initWithStyle:(UITableViewCellStyle)s reuseIdentifier:(NSString*)r {
+    self = [super initWithStyle:s reuseIdentifier:r];
+    self.backgroundColor = UIColor.clearColor;
+    self.selectionStyle = UITableViewCellSelectionStyleNone;
+    
+    _card = [UIView new];
+    _card.translatesAutoresizingMaskIntoConstraints = NO;
+    _card.layer.cornerRadius = 16;
+    _card.layer.masksToBounds = NO;
+    [self.contentView addSubview:_card];
+    
+    _accentStrip = [UIView new];
+    _accentStrip.translatesAutoresizingMaskIntoConstraints = NO;
+    _accentStrip.layer.cornerRadius = 2;
+    _accentStrip.clipsToBounds = YES;
+    [_card addSubview:_accentStrip];
+    
+    _numBadge = [UIView new];
+    _numBadge.translatesAutoresizingMaskIntoConstraints = NO;
+    _numBadge.layer.cornerRadius = 8;
+    _numBadge.layer.borderWidth = 0.8;
+    [_card addSubview:_numBadge];
+    
+    _num = [UILabel new];
+    _num.translatesAutoresizingMaskIntoConstraints = NO;
+    _num.font = [UIFont monospacedSystemFontOfSize:11 weight:UIFontWeightBold];
+    [_numBadge addSubview:_num];
+    
+    _name = [UILabel new];
+    _name.translatesAutoresizingMaskIntoConstraints = NO;
+    _name.font = [UIFont systemFontOfSize:15 weight:UIFontWeightBold];
+    _name.textColor = UIColor.whiteColor;
+    [_card addSubview:_name];
+    
+    _desc = [UILabel new];
+    _desc.translatesAutoresizingMaskIntoConstraints = NO;
+    _desc.font = [UIFont systemFontOfSize:11 weight:UIFontWeightRegular];
+    _desc.textColor = [UIColor colorWithWhite:0.65 alpha:1.0];
+    [_card addSubview:_desc];
+    
+    self.statusLbl = [UILabel new];
+    self.statusLbl.translatesAutoresizingMaskIntoConstraints = NO;
+    self.statusLbl.font = [UIFont systemFontOfSize:11 weight:UIFontWeightMedium];
+    self.statusLbl.textColor = ZXGray;
+    self.statusLbl.numberOfLines = 2;
+    [_card addSubview:self.statusLbl];
+    
+    self.sw = [UISwitch new];
+    self.sw.translatesAutoresizingMaskIntoConstraints = NO;
+    self.sw.transform = CGAffineTransformMakeScale(0.78, 0.78);
     [self.sw addTarget:self action:@selector(swCh:) forControlEvents:UIControlEventValueChanged];
     [_card addSubview:self.sw];
+    
     [NSLayoutConstraint activateConstraints:@[
-        [_card.topAnchor constraintEqualToAnchor:self.contentView.topAnchor constant:4],
-        [_card.bottomAnchor constraintEqualToAnchor:self.contentView.bottomAnchor constant:-4],
-        [_card.leadingAnchor constraintEqualToAnchor:self.contentView.leadingAnchor],
-        [_card.trailingAnchor constraintEqualToAnchor:self.contentView.trailingAnchor],
-        [_num.topAnchor constraintEqualToAnchor:_card.topAnchor constant:8],
-        [_num.trailingAnchor constraintEqualToAnchor:_card.trailingAnchor constant:-12],
-        [_name.leadingAnchor constraintEqualToAnchor:_card.leadingAnchor constant:14],
-        [_name.topAnchor constraintEqualToAnchor:_card.topAnchor constant:12],
-        [_name.trailingAnchor constraintEqualToAnchor:self.sw.leadingAnchor constant:-8],
+        [_card.topAnchor constraintEqualToAnchor:self.contentView.topAnchor constant:5],
+        [_card.bottomAnchor constraintEqualToAnchor:self.contentView.bottomAnchor constant:-5],
+        [_card.leadingAnchor constraintEqualToAnchor:self.contentView.leadingAnchor constant:2],
+        [_card.trailingAnchor constraintEqualToAnchor:self.contentView.trailingAnchor constant:-2],
+        
+        [_accentStrip.leadingAnchor constraintEqualToAnchor:_card.leadingAnchor constant:10],
+        [_accentStrip.centerYAnchor constraintEqualToAnchor:_card.centerYAnchor],
+        [_accentStrip.widthAnchor constraintEqualToConstant:4],
+        [_accentStrip.heightAnchor constraintEqualToAnchor:_card.heightAnchor multiplier:0.65],
+        
+        [_numBadge.topAnchor constraintEqualToAnchor:_card.topAnchor constant:10],
+        [_numBadge.trailingAnchor constraintEqualToAnchor:self.sw.leadingAnchor constant:-10],
+        [_num.topAnchor constraintEqualToAnchor:_numBadge.topAnchor constant:2],
+        [_num.bottomAnchor constraintEqualToAnchor:_numBadge.bottomAnchor constant:-2],
+        [_num.leadingAnchor constraintEqualToAnchor:_numBadge.leadingAnchor constant:6],
+        [_num.trailingAnchor constraintEqualToAnchor:_numBadge.trailingAnchor constant:-6],
+        
+        [_name.leadingAnchor constraintEqualToAnchor:_accentStrip.trailingAnchor constant:12],
+        [_name.topAnchor constraintEqualToAnchor:_card.topAnchor constant:10],
+        [_name.trailingAnchor constraintEqualToAnchor:_numBadge.leadingAnchor constant:-6],
+        
         [_desc.leadingAnchor constraintEqualToAnchor:_name.leadingAnchor],
         [_desc.topAnchor constraintEqualToAnchor:_name.bottomAnchor constant:2],
+        [_desc.trailingAnchor constraintEqualToAnchor:self.sw.leadingAnchor constant:-8],
+        
         [self.statusLbl.leadingAnchor constraintEqualToAnchor:_name.leadingAnchor],
         [self.statusLbl.topAnchor constraintEqualToAnchor:_desc.bottomAnchor constant:2],
-        [self.statusLbl.bottomAnchor constraintEqualToAnchor:_card.bottomAnchor constant:-10],
+        [self.statusLbl.bottomAnchor constraintEqualToAnchor:_card.bottomAnchor constant:-8],
+        
         [self.sw.centerYAnchor constraintEqualToAnchor:_card.centerYAnchor],
-        [self.sw.trailingAnchor constraintEqualToAnchor:_card.trailingAnchor constant:-12],
+        [self.sw.trailingAnchor constraintEqualToAnchor:_card.trailingAnchor constant:-10],
     ]];
     return self;
 }
--(void)configure:(ZXSlot*)s idx:(NSInteger)idx{
-    _num.text=[NSString stringWithFormat:@"%02ld",(long)(idx+1)];
-    _name.text=s.name;_desc.text=s.desc;
-    self.sw.on=NO;self.statusLbl.text=@"";
+-(void)configure:(ZXSlot*)s idx:(NSInteger)idx {
+    _num.text = [NSString stringWithFormat:@"#%02ld", (long)(idx+1)];
+    _name.text = s.name;
+    _desc.text = s.desc;
+    self.sw.on = NO;
+    self.statusLbl.text = @"";
     BOOL isBypass = [s.name.uppercaseString containsString:@"BYPASS"] || [s.name.uppercaseString containsString:@"REMOVE"];
-    if(isBypass){
-        _card.layer.borderColor=[UIColor colorWithRed:1.0 green:0.22 blue:0.42 alpha:1.0].CGColor;
-        _card.layer.borderWidth=1.2;
-        _card.layer.shadowColor=[UIColor colorWithRed:1.0 green:0.1 blue:0.35 alpha:1.0].CGColor;
-        _card.layer.shadowRadius=12;
-        _card.layer.shadowOpacity=0.9;
-        _card.backgroundColor=[UIColor colorWithRed:0.13 green:0.02 blue:0.06 alpha:0.9];
-        _name.textColor=[UIColor colorWithRed:1.0 green:0.35 blue:0.55 alpha:1.0];
-        _num.textColor=[UIColor colorWithRed:1.0 green:0.3 blue:0.5 alpha:0.5];
-        self.sw.onTintColor=[UIColor colorWithRed:1.0 green:0.2 blue:0.42 alpha:1.0];
+    if (isBypass) {
+        _card.backgroundColor = [UIColor colorWithRed:0.14 green:0.02 blue:0.06 alpha:0.92];
+        _card.layer.borderColor = [UIColor colorWithRed:1.0 green:0.20 blue:0.45 alpha:0.9].CGColor;
+        _card.layer.borderWidth = 1.2;
+        _card.layer.shadowColor = [UIColor colorWithRed:1.0 green:0.1 blue:0.4 alpha:0.8].CGColor;
+        _card.layer.shadowRadius = 10;
+        _card.layer.shadowOpacity = 0.7;
+        
+        _accentStrip.backgroundColor = [UIColor colorWithRed:1.0 green:0.2 blue:0.5 alpha:1.0];
+        _numBadge.backgroundColor = [UIColor colorWithRed:0.3 green:0.04 blue:0.1 alpha:0.8];
+        _numBadge.layer.borderColor = [UIColor colorWithRed:1.0 green:0.3 blue:0.6 alpha:0.6].CGColor;
+        _num.textColor = [UIColor colorWithRed:1.0 green:0.4 blue:0.65 alpha:1.0];
+        _name.textColor = [UIColor colorWithRed:1.0 green:0.45 blue:0.65 alpha:1.0];
+        self.sw.onTintColor = [UIColor colorWithRed:1.0 green:0.20 blue:0.45 alpha:1.0];
     } else {
-        _card.layer.borderColor=[UIColor colorWithWhite:1 alpha:.07].CGColor;
-        _card.layer.borderWidth=.5;
-        _card.layer.shadowColor=ZXRed.CGColor;
-        _card.layer.shadowRadius=8;
-        _card.layer.shadowOpacity=0.4;
-        _card.backgroundColor=[UIColor colorWithWhite:1 alpha:.03];
-        _name.textColor=UIColor.whiteColor;
-        _num.textColor=[UIColor colorWithWhite:1 alpha:.15];
-        self.sw.onTintColor=ZXRed;
+        _card.backgroundColor = [UIColor colorWithRed:0.08 green:0.03 blue:0.05 alpha:0.85];
+        _card.layer.borderColor = [UIColor colorWithRed:1.0 green:0.15 blue:0.3 alpha:0.35].CGColor;
+        _card.layer.borderWidth = 1.0;
+        _card.layer.shadowColor = [UIColor colorWithRed:0.9 green:0.1 blue:0.25 alpha:0.5].CGColor;
+        _card.layer.shadowRadius = 8;
+        _card.layer.shadowOpacity = 0.5;
+        
+        _accentStrip.backgroundColor = ZXRed;
+        _numBadge.backgroundColor = [UIColor colorWithRed:0.2 green:0.03 blue:0.06 alpha:0.6];
+        _numBadge.layer.borderColor = [UIColor colorWithRed:1.0 green:0.15 blue:0.3 alpha:0.35].CGColor;
+        _num.textColor = [UIColor colorWithRed:1.0 green:0.4 blue:0.5 alpha:0.8];
+        _name.textColor = UIColor.whiteColor;
+        self.sw.onTintColor = ZXRed;
     }
 }
 -(void)setStatus:(NSString*)st color:(UIColor*)c{self.statusLbl.text=st;self.statusLbl.textColor=c?:ZXGray;}
 -(void)swCh:(UISwitch*)s{if(self.onToggle)self.onToggle(s.isOn);}
+@end
 @end
 
 static UIImage* ZXFixOrientation(UIImage* src) {
@@ -1035,9 +1087,15 @@ static void ZXApplyModernButton(UIButton *btn) {
     __weak ZXMainVC*ws=self;ZXSlot*s2=slot;NSIndexPath*cIP=ip;
     cell.onToggle=^(BOOL on){
         if(!on)return;
-        BOOL isBypass = [s2.name.uppercaseString containsString:@"BYPASS"] || [s2.name.uppercaseString containsString:@"REMOVE"];
-        if(isBypass){ ZXPlay(@"remove"); } else { ZXPlay(@"activate"); }
         __strong ZXMainVC*svc=ws;if(!svc)return;
+        BOOL isBypass = [s2.name.uppercaseString containsString:@"BYPASS"] || [s2.name.uppercaseString containsString:@"REMOVE"];
+        if(isBypass){
+            ZXPlay(@"remove");
+        } else if(svc->_tab == 0){
+            ZXPlay(@"option1");
+        } else {
+            ZXPlay(@"activate");
+        }
         BOOL hasTH=s2.ffthPath.length>0,hasMAX=s2.ffmaxPath.length>0;
         NSString*base=[svc mcmBase];NSInteger opt=svc->_tab+1;
         void(^inject)(NSString*)=^(NSString*p){
@@ -1108,12 +1166,23 @@ static void ZXApplyModernButton(UIButton *btn) {
     _tab=idx;[_tv reloadData];
     for(NSInteger i=0;i<(NSInteger)_tabBtns.count;i++){
         UIButton*b=(UIButton*)_tabBtns[i];BOOL sel=(i==idx);
-        [b setTitleColor:sel?UIColor.whiteColor:ZXGray forState:0];
-        b.titleLabel.font=[UIFont systemFontOfSize:11 weight:sel?UIFontWeightBold:UIFontWeightRegular];
-        for(UIView*sv in b.subviews){if(sv.tag==88)[sv removeFromSuperview];}
         if(sel){
-            UIView*ind=[[UIView alloc]initWithFrame:CGRectMake(0,0,b.bounds.size.width,2)];
-            ind.backgroundColor=ZXRed;ind.tag=88;ZXRedGlow(ind,4);[b addSubview:ind];
+            b.backgroundColor=[UIColor colorWithRed:0.95 green:0.09 blue:0.27 alpha:0.35];
+            b.layer.borderColor=[UIColor colorWithRed:1.0 green:0.25 blue:0.4 alpha:0.85].CGColor;
+            b.layer.borderWidth=1.2;
+            b.layer.cornerRadius=14;
+            b.layer.shadowColor=[UIColor colorWithRed:1.0 green:0.1 blue:0.3 alpha:0.8].CGColor;
+            b.layer.shadowRadius=6;
+            b.layer.shadowOpacity=0.6;
+            [b setTitleColor:UIColor.whiteColor forState:0];
+            b.titleLabel.font=[UIFont systemFontOfSize:12 weight:UIFontWeightBold];
+        } else {
+            b.backgroundColor=UIColor.clearColor;
+            b.layer.borderColor=UIColor.clearColor.CGColor;
+            b.layer.borderWidth=0;
+            b.layer.shadowOpacity=0;
+            [b setTitleColor:[UIColor colorWithWhite:0.6 alpha:1.0] forState:0];
+            b.titleLabel.font=[UIFont systemFontOfSize:11 weight:UIFontWeightMedium];
         }
     }
 }
