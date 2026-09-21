@@ -1,0 +1,120 @@
+{
+  "version": "2.7.1",
+  "telegram": "https://t.me/zexinjector",
+  "typeA": {
+    "name": "Type A",
+    "mcmFolder": "[MHA-C2] App Data"
+  },
+  "typeB": {
+    "name": "Type B",
+    "mcmFolder": "[MHA-C12] System Data"
+  },
+  "option1Slots": [
+    {
+      "id": 1,
+      "name": "Slot One",
+      "description": "Custom configuration",
+      "type": "A",
+      "fileUrl": "",
+      "fileName": "slot1.bin"
+    },
+    {
+      "id": 2,
+      "name": "Slot Two",
+      "description": "Custom configuration",
+      "type": "A",
+      "fileUrl": "",
+      "fileName": "slot2.bin"
+    },
+    {
+      "id": 3,
+      "name": "Slot Three",
+      "description": "Custom configuration",
+      "type": "B",
+      "fileUrl": "",
+      "fileName": "slot3.bin"
+    },
+    {
+      "id": 4,
+      "name": "Slot Four",
+      "description": "Custom configuration",
+      "type": "B",
+      "fileUrl": "",
+      "fileName": "slot4.bin"
+    },
+    {
+      "id": 5,
+      "name": "Slot Five",
+      "description": "Custom configuration",
+      "type": "A",
+      "fileUrl": "",
+      "fileName": "slot5.bin"
+    }
+  ],
+  "option2Slots": [
+    {
+      "id": 6,
+      "name": "Slot Six",
+      "description": "Custom configuration",
+      "type": "A",
+      "fileUrl": "",
+      "fileName": "slot6.bin"
+    },
+    {
+      "id": 7,
+      "name": "Slot Seven",
+      "description": "Custom configuration",
+      "type": "A",
+      "fileUrl": "",
+      "fileName": "slot7.bin"
+    },
+    {
+      "id": 8,
+      "name": "Slot Eight",
+      "description": "Custom configuration",
+      "type": "B",
+      "fileUrl": "",
+      "fileName": "slot8.bin"
+    },
+    {
+      "id": 9,
+      "name": "Slot Nine",
+      "description": "Custom configuration",
+      "type": "B",
+      "fileUrl": "",
+      "fileName": "slot9.bin"
+    },
+    {
+      "id": 10,
+      "name": "Slot Ten",
+      "description": "Custom configuration",
+      "type": "A",
+      "fileUrl": "",
+      "fileName": "slot10.bin"
+    }
+  ],
+  "option1Name": "AIM LOCK",
+  "option2Name": "LOCATION",
+  "option3Name": "MOD SKIN",
+  "option4Name": "EXTRA",
+  "option4Slots": [
+    {
+      "id": 1,
+      "name": "BYPASS FFTH",
+      "description": "APPLY AFTER LEAVING GAME",
+      "type": "AB",
+      "fileName": "",
+      "fileUrl": "",
+      "ffthPath": "com.dts.freefireth/Documents/contentcache/Compulsory/ios/gameassetbundles/"
+    },
+    {
+      "id": 2,
+      "name": "BYPASS FF MAX",
+      "description": "APPLY AFTER LEAVING GAME",
+      "type": "AB",
+      "fileName": "",
+      "fileUrl": "",
+      "ffmaxPath": "com.dts.freefiremax/Documents/contentcache/Compulsory/ios/gameassetbundles/"
+    }
+  ]
+}

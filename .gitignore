@@ -1,0 +1,22 @@
+﻿# Theos build artifacts
+.theos/
+obj/
+packages/
+Payload/
+*.ipa
+*.deb
+
+# Compiler / temp files
+*.o
+*.d
+*.dylib
+*.sublime-*
+.DS_Store
+*.swp
+*~
+*.orig
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
