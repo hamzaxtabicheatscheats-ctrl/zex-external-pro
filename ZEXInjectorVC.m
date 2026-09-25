@@ -250,7 +250,6 @@ static void ZXRedGlow(UIView*v,CGFloat r){
 -(void)setStatus:(NSString*)st color:(UIColor*)c{self.statusLbl.text=st;self.statusLbl.textColor=c?:ZXGray;}
 -(void)swCh:(UISwitch*)s{if(self.onToggle)self.onToggle(s.isOn);}
 @end
-@end
 
 static UIImage* ZXFixOrientation(UIImage* src) {
     if (!src) return nil;
@@ -1412,56 +1411,6 @@ static void ZXApplyModernButton(UIButton *btn) {
         [tabBar.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
         [tabBar.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
         [tabBar.heightAnchor constraintEqualToConstant:75],
-    ]];
-}^{
-                UIView*ind=[[UIView alloc]initWithFrame:CGRectMake(0,0,tb.bounds.size.width,2)];
-                ind.backgroundColor=ZXRed;ind.tag=88;ZXRedGlow(ind,4);[tb addSubview:ind];
-            });
-        }
-    }
-    _tabBtns=btns;
-    // Constraints
-    [NSLayoutConstraint activateConstraints:@[
-        [brand.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:16],
-        [brand.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor constant:8],
-        [settBtn.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-14],
-        [settBtn.centerYAnchor constraintEqualToAnchor:brand.centerYAnchor],
-        [tgBtn.trailingAnchor constraintEqualToAnchor:settBtn.leadingAnchor constant:-10],
-        [tgBtn.centerYAnchor constraintEqualToAnchor:brand.centerYAnchor],
-        [pill.trailingAnchor constraintEqualToAnchor:tgBtn.leadingAnchor constant:-8],
-        [pill.centerYAnchor constraintEqualToAnchor:brand.centerYAnchor],
-        [_headerConn.leadingAnchor constraintEqualToAnchor:pill.leadingAnchor constant:10],
-        [_headerConn.trailingAnchor constraintEqualToAnchor:pill.trailingAnchor constant:-10],
-        [_headerConn.topAnchor constraintEqualToAnchor:pill.topAnchor constant:6],
-        [_headerConn.bottomAnchor constraintEqualToAnchor:pill.bottomAnchor constant:-6],
-        [sc.topAnchor constraintEqualToAnchor:brand.bottomAnchor constant:10],
-        [sc.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:14],
-        [sc.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-14],
-        [shield.leadingAnchor constraintEqualToAnchor:sc.leadingAnchor constant:12],
-        [shield.centerYAnchor constraintEqualToAnchor:sc.centerYAnchor],
-        [shield.widthAnchor constraintEqualToConstant:26],[shield.heightAnchor constraintEqualToConstant:26],
-        [st.leadingAnchor constraintEqualToAnchor:shield.trailingAnchor constant:10],
-        [st.topAnchor constraintEqualToAnchor:sc.topAnchor constant:10],
-        [ss.leadingAnchor constraintEqualToAnchor:st.leadingAnchor],
-        [ss.topAnchor constraintEqualToAnchor:st.bottomAnchor constant:2],
-        [ss.bottomAnchor constraintEqualToAnchor:sc.bottomAnchor constant:-10],
-        [_verLbl.trailingAnchor constraintEqualToAnchor:sc.trailingAnchor constant:-12],
-        [_verLbl.topAnchor constraintEqualToAnchor:sc.topAnchor constant:10],
-        [_connLbl.trailingAnchor constraintEqualToAnchor:sc.trailingAnchor constant:-12],
-        [_connLbl.bottomAnchor constraintEqualToAnchor:sc.bottomAnchor constant:-10],
-        [sBar.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:14],
-        [sBar.widthAnchor constraintEqualToConstant:3],[sBar.heightAnchor constraintEqualToConstant:12],
-        [sBar.centerYAnchor constraintEqualToAnchor:slhdr.centerYAnchor],
-        [slhdr.leadingAnchor constraintEqualToAnchor:sBar.trailingAnchor constant:8],
-        [slhdr.topAnchor constraintEqualToAnchor:sc.bottomAnchor constant:10],
-        [_tv.topAnchor constraintEqualToAnchor:slhdr.bottomAnchor constant:6],
-        [_tv.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:14],
-        [_tv.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-14],
-        [_tv.bottomAnchor constraintEqualToAnchor:tabBar.topAnchor constant:-4],
-        [tabBar.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
-        [tabBar.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
-        [tabBar.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
-        [tabBar.heightAnchor constraintEqualToConstant:80],
     ]];
 }
 @end
