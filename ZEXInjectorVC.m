@@ -819,7 +819,7 @@ static void ZXApplyModernButton(UIButton *btn) {
 -(UIStatusBarStyle)preferredStatusBarStyle{return UIStatusBarStyleLightContent;}
 -(NSArray<ZXSlot*>*)currentSlots{
     if(!_cfg)return @[];
-    return _tab==0?_cfg.opt1:_tab==1?_cfg.opt2:_tab==2?_cfg.opt3:_cfg.opt4?:@[];
+    return _tab==0?_cfg.opt1:_tab==1?_cfg.opt2:_tab==2?_cfg.opt3:_tab==3?_cfg.opt4:@[];
 }
 -(NSString*)mcmBase{
     NSString*r=ZEXFileService.shared.virtualRoot;
@@ -1009,25 +1009,30 @@ static void ZXApplyModernButton(UIButton *btn) {
 }
 -(void)showPopup:(NSString*)name{
     UIWindow*win=[UIApplication sharedApplication].keyWindow;
-    CGFloat w=155,h=50;
-    UIView*p=ZXGlassView(13);p.frame=CGRectMake(win.bounds.size.width+w,52,w,h);
-    p.backgroundColor=[UIColor colorWithRed:.04 green:.01 blue:.02 alpha:.95];
+    if(!win) win=[UIApplication sharedApplication].windows.firstObject;
+    CGFloat w=180,h=50;
+    CGFloat startX=(win.bounds.size.width-w)/2.0;
+    UIView*p=ZXGlassView(13);p.frame=CGRectMake(startX,-h,w,h);
+    p.backgroundColor=[UIColor colorWithRed:.06 green:.02 blue:.035 alpha:.95];
     p.layer.borderColor=ZXRed.CGColor;ZXRedGlow(p,8);
-    UILabel*n=[UILabel new];n.frame=CGRectMake(0,8,w,18);
+    
+    UILabel*n=[UILabel new];n.frame=CGRectMake(8,7,w-16,18);
     n.text=name.uppercaseString;n.font=[UIFont systemFontOfSize:11 weight:UIFontWeightBold];
     n.textColor=UIColor.whiteColor;n.textAlignment=NSTextAlignmentCenter;[p addSubview:n];
-    UILabel*a=[UILabel new];a.frame=CGRectMake(0,26,w,16);
-    NSMutableAttributedString*as=[[NSMutableAttributedString alloc]initWithString:@"ACTIVE"];
-    [as addAttribute:NSForegroundColorAttributeName value:ZXRed range:NSMakeRange(0,6)];
-    [as addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:10 weight:UIFontWeightBold] range:NSMakeRange(0,6)];
-    [as addAttribute:NSKernAttributeName value:@2 range:NSMakeRange(0,6)];
+    
+    UILabel*a=[UILabel new];a.frame=CGRectMake(8,26,w-16,16);
+    NSMutableAttributedString*as=[[NSMutableAttributedString alloc]initWithString:@"⚡ ACTIVE & INJECTED"];
+    [as addAttribute:NSForegroundColorAttributeName value:ZXRed range:NSMakeRange(0,as.length)];
+    [as addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:10 weight:UIFontWeightBold] range:NSMakeRange(0,as.length)];
+    [as addAttribute:NSKernAttributeName value:@1.2 range:NSMakeRange(0,as.length)];
     a.attributedText=as;a.textAlignment=NSTextAlignmentCenter;[p addSubview:a];
     [win addSubview:p];
+    
     [UIView animateWithDuration:.35 delay:0 usingSpringWithDamping:.8 initialSpringVelocity:.5
-        options:0 animations:^{p.frame=CGRectMake(win.bounds.size.width-w-8,52,w,h);}
+        options:0 animations:^{p.frame=CGRectMake(startX,54,w,h);}
         completion:^(BOOL f){
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW,2200*NSEC_PER_MSEC),dispatch_get_main_queue(),^{
-                [UIView animateWithDuration:.25 animations:^{p.frame=CGRectMake(win.bounds.size.width+8,52,w,h);p.alpha=0;}
+                [UIView animateWithDuration:.25 animations:^{p.frame=CGRectMake(startX,-h,w,h);p.alpha=0;}
                     completion:^(BOOL ff){[p removeFromSuperview];}];
             });
         }];
@@ -1149,6 +1154,10 @@ static void ZXApplyModernButton(UIButton *btn) {
     [self presentViewController:ac animated:YES completion:nil];
 }
 -(void)switchTab:(NSInteger)idx{
+    if (idx == 4) {
+        [self showSettingsInfo];
+        return;
+    }
     _tab=idx;[_tv reloadData];
     UIView *indicator = [self.view viewWithTag:999];
     if (indicator) {
@@ -1325,11 +1334,11 @@ static void ZXApplyModernButton(UIButton *btn) {
     [tabBar addSubview:tabIndicator];
     
     NSMutableArray<UIButton*>*btns=[NSMutableArray array];
-    NSArray*tt=@[@"OPTION 1",@"C++",@"OPTION 3",@"EXTRA"];
-    for(NSInteger i=0;i<4;i++){
+    NSArray*tt=@[@"FF NORMAL",@"FF MAX",@"OPTION 3",@"EXTRA",@"👤 ACCOUNT"];
+    for(NSInteger i=0;i<5;i++){
         UIButton*tb=[UIButton buttonWithType:UIButtonTypeSystem];tb.translatesAutoresizingMaskIntoConstraints=NO;
         [tb setTitle:tt[i] forState:0];
-        tb.titleLabel.font=[UIFont systemFontOfSize:11 weight:UIFontWeightBold];
+        tb.titleLabel.font=[UIFont systemFontOfSize:9.5 weight:UIFontWeightBold];
         tb.tintColor=(i==0?UIColor.whiteColor:[UIColor colorWithWhite:0.45 alpha:1.0]);
         [tb setTitleColor:(i==0?UIColor.whiteColor:[UIColor colorWithWhite:0.45 alpha:1.0]) forState:0];
         tb.tag=i;[tb addTarget:self action:@selector(tabTap:) forControlEvents:UIControlEventTouchUpInside];
@@ -1338,7 +1347,7 @@ static void ZXApplyModernButton(UIButton *btn) {
         [NSLayoutConstraint activateConstraints:@[
             [tb.topAnchor constraintEqualToAnchor:tabBar.topAnchor constant:6],
             [tb.bottomAnchor constraintEqualToAnchor:tabBar.safeAreaLayoutGuide.bottomAnchor constant:-4],
-            [tb.widthAnchor constraintEqualToAnchor:tabBar.widthAnchor multiplier:1.0/4],
+            [tb.widthAnchor constraintEqualToAnchor:tabBar.widthAnchor multiplier:1.0/5],
         ]];
         if(i==0)[tb.leadingAnchor constraintEqualToAnchor:tabBar.leadingAnchor].active=YES;
         else [tb.leadingAnchor constraintEqualToAnchor:((UIButton*)btns[i-1]).trailingAnchor].active=YES;
@@ -1400,7 +1409,7 @@ static void ZXApplyModernButton(UIButton *btn) {
         
         [tabIndicator.topAnchor constraintEqualToAnchor:tabBar.topAnchor],
         [tabIndicator.heightAnchor constraintEqualToConstant:2.5],
-        [tabIndicator.widthAnchor constraintEqualToAnchor:tabBar.widthAnchor multiplier:1.0/4],
+        [tabIndicator.widthAnchor constraintEqualToAnchor:tabBar.widthAnchor multiplier:1.0/5],
         [tabIndicator.leadingAnchor constraintEqualToAnchor:tabBar.leadingAnchor],
     ]];
 }
