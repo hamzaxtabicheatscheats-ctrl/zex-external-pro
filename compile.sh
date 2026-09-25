@@ -26,11 +26,11 @@ if [ -d "kexploit" ]; then
     done
 fi
 
-# Compile XPF directory files if present
-if [ -d "XPF/src" ]; then
-    for f in XPF/src/*.c XPF/src/*.m; do
+# Compile XPF and ChOma files recursively
+if [ -d "XPF" ]; then
+    while IFS= read -r f; do
         [ -f "$f" ] && compile_file "$f"
-    done
+    done < <(find XPF -type f \( -name "*.c" -o -name "*.m" \))
 fi
 
 echo "=== Linking Binary ==="
