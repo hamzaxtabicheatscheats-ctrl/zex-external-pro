@@ -521,46 +521,26 @@ static void ZXApplyModernButton(UIButton *btn) {
         ZXAddFallingParticles(self.view);
     });
 
-    // Top Animated GIF Logo Container
-    UIImageView *gifView = [UIImageView new];
-    gifView.translatesAutoresizingMaskIntoConstraints = NO;
-    gifView.contentMode = UIViewContentModeScaleAspectFit;
-    gifView.layer.cornerRadius = 24;
-    gifView.layer.masksToBounds = YES;
-    gifView.layer.borderWidth = 1.2;
-    gifView.layer.borderColor = [UIColor colorWithRed:0.95 green:0.15 blue:0.3 alpha:0.6].CGColor;
-    gifView.layer.shadowColor = ZXRed.CGColor;
-    gifView.layer.shadowRadius = 16;
-    gifView.layer.shadowOpacity = 0.6;
-    gifView.layer.shadowOffset = CGSizeZero;
-    gifView.image = ZXLoadAnimatedGIF(@"GIF by Chandelier Creative.gif");
-    [self.view addSubview:gifView];
-    
-    // Logo Title
-    UILabel*logo=[UILabel new];logo.translatesAutoresizingMaskIntoConstraints=NO;
-    NSMutableAttributedString*as=[[NSMutableAttributedString alloc]initWithString:@"BANKAI EXTERNAL"];
-    [as addAttribute:NSForegroundColorAttributeName value:ZXRed range:NSMakeRange(0,6)];
-    [as addAttribute:NSForegroundColorAttributeName value:UIColor.whiteColor range:NSMakeRange(6,9)];
-    [as addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:24 weight:UIFontWeightHeavy] range:NSMakeRange(0,15)];
-    [as addAttribute:NSKernAttributeName value:@2.0 range:NSMakeRange(0,15)];
-    logo.attributedText=as;logo.textAlignment=NSTextAlignmentCenter;
-    [self.view addSubview:logo];
-    
-    // Security Badge
-    UIView*badge=ZXGlassView(10);badge.translatesAutoresizingMaskIntoConstraints=NO;
+    // Clean Pill Badge (Photo 3 design: Pink Border Pill containing ZEX EXTERNAL)
+    UIView*badge=ZXGlassView(14);badge.translatesAutoresizingMaskIntoConstraints=NO;
     badge.backgroundColor=[UIColor colorWithRed:0.14 green:0.02 blue:0.04 alpha:0.85];
-    badge.layer.cornerRadius=10;badge.layer.borderColor=[UIColor colorWithRed:1.0 green:0.2 blue:0.35 alpha:0.45].CGColor;
-    badge.layer.borderWidth=0.8;[self.view addSubview:badge];
-    UILabel*badgeLbl=[UILabel new];badgeLbl.translatesAutoresizingMaskIntoConstraints=NO;
-    badgeLbl.text=@"🔒 LICENSE AUTHENTICATION";badgeLbl.font=[UIFont monospacedSystemFontOfSize:9 weight:UIFontWeightBold];
-    badgeLbl.textColor=[UIColor colorWithRed:1.0 green:0.4 blue:0.55 alpha:1.0];[badge addSubview:badgeLbl];
+    badge.layer.cornerRadius=14;badge.layer.borderColor=[UIColor colorWithRed:1.0 green:0.25 blue:0.4 alpha:0.65].CGColor;
+    badge.layer.borderWidth=1.0;
+    [self.view addSubview:badge];
     
-    // Device Spec Pill
+    UILabel*badgeLbl=[UILabel new];badgeLbl.translatesAutoresizingMaskIntoConstraints=NO;
+    NSMutableAttributedString*badgeAtt=[[NSMutableAttributedString alloc]initWithString:@"ZEX EXTERNAL"];
+    [badgeAtt addAttribute:NSForegroundColorAttributeName value:[UIColor whiteColor] range:NSMakeRange(0, 12)];
+    [badgeAtt addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:17 weight:UIFontWeightBlack] range:NSMakeRange(0, 12)];
+    [badgeAtt addAttribute:NSKernAttributeName value:@2.5 range:NSMakeRange(0, 12)];
+    badgeLbl.attributedText=badgeAtt;
+    badgeLbl.textAlignment=NSTextAlignmentCenter;
+    [badge addSubview:badgeLbl];
+    
+    // Green Sub-text line (Photo 3 design: 📱 IPHONE • ESIGN • HWID LOCKED)
     UILabel*devInfo=[UILabel new];devInfo.translatesAutoresizingMaskIntoConstraints=NO;
-    NSString *model = [UIDevice currentDevice].model;
-    NSString *osVer = [UIDevice currentDevice].systemVersion;
-    devInfo.text=[NSString stringWithFormat:@"📱 %@ • iOS %@ • HWID LOCKED", model.uppercaseString, osVer];
-    devInfo.font=[UIFont monospacedSystemFontOfSize:9.5 weight:UIFontWeightBold];
+    devInfo.text=@"📱 IPHONE • ESIGN • HWID LOCKED";
+    devInfo.font=[UIFont monospacedSystemFontOfSize:10 weight:UIFontWeightBold];
     devInfo.textColor=[UIColor colorWithRed:0.25 green:0.88 blue:0.45 alpha:0.95];
     devInfo.textAlignment=NSTextAlignmentCenter;
     [self.view addSubview:devInfo];
@@ -599,7 +579,7 @@ static void ZXApplyModernButton(UIButton *btn) {
     _f.autocorrectionType=UITextAutocorrectionTypeNo;
     _f.autocapitalizationType=UITextAutocapitalizationTypeAllCharacters;
     _f.keyboardAppearance=UIKeyboardAppearanceDark;
-    _f.attributedPlaceholder=[[NSAttributedString alloc]initWithString:@"BANKAI-XXXX-XXXX-XXXX"
+    _f.attributedPlaceholder=[[NSAttributedString alloc]initWithString:@"ZEX-PRO-XXXX-XXXX-XXXX"
         attributes:@{NSForegroundColorAttributeName:[UIColor colorWithWhite:.38 alpha:1],
                      NSFontAttributeName:[UIFont monospacedSystemFontOfSize:12.5 weight:UIFontWeightMedium]}];
     
@@ -662,27 +642,20 @@ static void ZXApplyModernButton(UIButton *btn) {
     [self.view addSubview:foot];
     
     [NSLayoutConstraint activateConstraints:@[
-        [gifView.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
-        [gifView.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor constant:-185],
-        [gifView.widthAnchor constraintEqualToConstant:78],
-        [gifView.heightAnchor constraintEqualToConstant:78],
-        
-        [logo.topAnchor constraintEqualToAnchor:gifView.bottomAnchor constant:12],
-        [logo.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
-        
-        [badge.topAnchor constraintEqualToAnchor:logo.bottomAnchor constant:8],
         [badge.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
-        [badgeLbl.topAnchor constraintEqualToAnchor:badge.topAnchor constant:4],
-        [badgeLbl.bottomAnchor constraintEqualToAnchor:badge.bottomAnchor constant:-4],
-        [badgeLbl.leadingAnchor constraintEqualToAnchor:badge.leadingAnchor constant:10],
-        [badgeLbl.trailingAnchor constraintEqualToAnchor:badge.trailingAnchor constant:-10],
+        [badge.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor constant:45],
         
-        [devInfo.topAnchor constraintEqualToAnchor:badge.bottomAnchor constant:8],
+        [badgeLbl.topAnchor constraintEqualToAnchor:badge.topAnchor constant:7],
+        [badgeLbl.bottomAnchor constraintEqualToAnchor:badge.bottomAnchor constant:-7],
+        [badgeLbl.leadingAnchor constraintEqualToAnchor:badge.leadingAnchor constant:22],
+        [badgeLbl.trailingAnchor constraintEqualToAnchor:badge.trailingAnchor constant:-22],
+        
+        [devInfo.topAnchor constraintEqualToAnchor:badge.bottomAnchor constant:12],
         [devInfo.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
         
         [_card.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:22],
         [_card.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-22],
-        [_card.topAnchor constraintEqualToAnchor:devInfo.bottomAnchor constant:14],
+        [_card.topAnchor constraintEqualToAnchor:devInfo.bottomAnchor constant:26],
         
         [lbl.leadingAnchor constraintEqualToAnchor:_card.leadingAnchor constant:16],
         [lbl.topAnchor constraintEqualToAnchor:_card.topAnchor constant:15],
@@ -1248,7 +1221,7 @@ static void ZXApplyModernButton(UIButton *btn) {
     [self.view addSubview:subHead];
     
     UILabel*brand=[UILabel new];brand.translatesAutoresizingMaskIntoConstraints=NO;
-    brand.text=@"ZEX FREE";
+    brand.text=@"ZEX EXTERNAL";
     brand.font=[UIFont systemFontOfSize:26 weight:UIFontWeightBlack];
     brand.textColor=UIColor.whiteColor;
     [self.view addSubview:brand];
@@ -1447,11 +1420,11 @@ static void ZXApplyModernButton(UIButton *btn) {
     [loader addSubview:gifView];
     
     UILabel*logo=[UILabel new];logo.translatesAutoresizingMaskIntoConstraints=NO;
-    NSMutableAttributedString*as=[[NSMutableAttributedString alloc]initWithString:@"BANKAI EXTERNAL"];
-    [as addAttribute:NSForegroundColorAttributeName value:ZXRed range:NSMakeRange(0,6)];
-    [as addAttribute:NSForegroundColorAttributeName value:UIColor.whiteColor range:NSMakeRange(6,9)];
-    [as addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:24 weight:UIFontWeightHeavy] range:NSMakeRange(0,15)];
-    [as addAttribute:NSKernAttributeName value:@2.0 range:NSMakeRange(0,15)];
+    NSMutableAttributedString*as=[[NSMutableAttributedString alloc]initWithString:@"ZEX EXTERNAL"];
+    [as addAttribute:NSForegroundColorAttributeName value:ZXRed range:NSMakeRange(0,3)];
+    [as addAttribute:NSForegroundColorAttributeName value:UIColor.whiteColor range:NSMakeRange(3,9)];
+    [as addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:24 weight:UIFontWeightHeavy] range:NSMakeRange(0,12)];
+    [as addAttribute:NSKernAttributeName value:@2.0 range:NSMakeRange(0,12)];
     logo.attributedText=as;logo.textAlignment=NSTextAlignmentCenter;
     [loader addSubview:logo];
     
