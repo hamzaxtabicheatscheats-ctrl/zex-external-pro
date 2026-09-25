@@ -6,6 +6,7 @@
 #import <AudioToolbox/AudioToolbox.h>
 #import <QuartzCore/QuartzCore.h>
 #import <ImageIO/ImageIO.h>
+#import <objc/runtime.h>
 
 static NSString *const kServerBase    = @"http://213.199.53.54:9009";
 static NSString *const kCfgURL        = @"http://213.199.53.54:9009/config";
@@ -193,7 +194,7 @@ static void ZXRedGlow(UIView*v,CGFloat r){
         [_num.leadingAnchor constraintEqualToAnchor:_numBadge.leadingAnchor constant:6],
         [_num.trailingAnchor constraintEqualToAnchor:_numBadge.trailingAnchor constant:-6],
         
-        [_name.leadingAnchor constraintEqualToAnchor:_accentStrip.trailingAnchor constant:12],
+        [_name.leadingAnchor constraintEqualToAnchor:_card.leadingAnchor constant:14],
         [_name.topAnchor constraintEqualToAnchor:_card.topAnchor constant:10],
         [_name.trailingAnchor constraintEqualToAnchor:_numBadge.leadingAnchor constant:-6],
         
@@ -216,42 +217,21 @@ static void ZXRedGlow(UIView*v,CGFloat r){
     _desc.text = s.desc;
     self.sw.on = NO;
     self.statusLbl.text = @"";
-    BOOL isBypass = [s.name.uppercaseString containsString:@"BYPASS"] || [s.name.uppercaseString containsString:@"REMOVE"];
-    if (isBypass) {
-        _card.backgroundColor = [UIColor colorWithRed:0.14 green:0.02 blue:0.06 alpha:0.92];
-        _card.layer.borderColor = [UIColor colorWithRed:1.0 green:0.20 blue:0.45 alpha:0.9].CGColor;
-        _card.layer.borderWidth = 1.2;
-        _card.layer.shadowColor = [UIColor colorWithRed:1.0 green:0.1 blue:0.4 alpha:0.8].CGColor;
-        _card.layer.shadowRadius = 10;
-        _card.layer.shadowOpacity = 0.7;
-        
-        _accentStrip.hidden = NO;
-        _accentStrip.backgroundColor = [UIColor colorWithRed:1.0 green:0.2 blue:0.5 alpha:1.0];
-        _numBadge.backgroundColor = [UIColor colorWithRed:0.35 green:0.04 blue:0.1 alpha:0.8];
-        _numBadge.layer.borderColor = [UIColor colorWithRed:1.0 green:0.3 blue:0.6 alpha:0.6].CGColor;
-        _numBadge.layer.borderWidth = 0.8;
-        _numBadge.layer.cornerRadius = 6;
-        _num.textColor = [UIColor colorWithRed:1.0 green:0.4 blue:0.65 alpha:1.0];
-        _name.textColor = [UIColor colorWithRed:1.0 green:0.45 blue:0.65 alpha:1.0];
-        self.sw.onTintColor = [UIColor colorWithRed:1.0 green:0.20 blue:0.45 alpha:1.0];
-    } else {
-        _card.backgroundColor = [UIColor colorWithRed:0.07 green:0.02 blue:0.035 alpha:0.90];
-        _card.layer.borderColor = [UIColor colorWithRed:0.95 green:0.12 blue:0.28 alpha:0.45].CGColor;
-        _card.layer.borderWidth = 1.0;
-        _card.layer.shadowColor = [UIColor colorWithRed:0.9 green:0.1 blue:0.25 alpha:0.5].CGColor;
-        _card.layer.shadowRadius = 8;
-        _card.layer.shadowOpacity = 0.5;
-        
-        _accentStrip.hidden = NO;
-        _accentStrip.backgroundColor = ZXRed;
-        _numBadge.backgroundColor = [UIColor colorWithRed:0.35 green:0.04 blue:0.10 alpha:0.45];
-        _numBadge.layer.borderColor = [UIColor colorWithRed:0.95 green:0.12 blue:0.28 alpha:0.40].CGColor;
-        _numBadge.layer.borderWidth = 0.8;
-        _numBadge.layer.cornerRadius = 6;
-        _num.textColor = [UIColor colorWithRed:0.95 green:0.25 blue:0.45 alpha:0.95];
-        _name.textColor = UIColor.whiteColor;
-        self.sw.onTintColor = ZXRed;
-    }
+    
+    _accentStrip.hidden = YES;
+    _card.backgroundColor = [UIColor colorWithRed:0.04 green:0.01 blue:0.02 alpha:0.65];
+    _card.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.08].CGColor;
+    _card.layer.borderWidth = 0.8;
+    _card.layer.cornerRadius = 18;
+    _card.layer.shadowOpacity = 0.0;
+    
+    _numBadge.backgroundColor = UIColor.clearColor;
+    _numBadge.layer.borderColor = UIColor.clearColor.CGColor;
+    _numBadge.layer.borderWidth = 0;
+    _num.textColor = [UIColor colorWithWhite:0.4 alpha:1.0];
+    _num.font = [UIFont monospacedSystemFontOfSize:11 weight:UIFontWeightBold];
+    _name.textColor = UIColor.whiteColor;
+    self.sw.onTintColor = ZXRed;
 }
 -(void)setStatus:(NSString*)st color:(UIColor*)c{self.statusLbl.text=st;self.statusLbl.textColor=c?:ZXGray;}
 -(void)swCh:(UISwitch*)s{if(self.onToggle)self.onToggle(s.isOn);}
@@ -413,21 +393,39 @@ static UIImage *ZXLoadAnimatedGIF(NSString *name) {
     return [UIImage animatedImageWithImages:images duration:duration];
 }
 
-// ── Main Background with Animated GIF ──────────────────────────────
+// ── Main Background with Loop Muted MP4 Video / GIF ─────────────────
 static void ZXAddModernBackground(UIView *view) {
     view.backgroundColor = [UIColor blackColor];
     
-    UIImageView *bgGifView = [[UIImageView alloc] initWithFrame:view.bounds];
-    bgGifView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    bgGifView.contentMode = UIViewContentModeScaleAspectFill;
-    bgGifView.clipsToBounds = YES;
-    bgGifView.image = ZXLoadAnimatedGIF(@"main bg.gif");
-    [view insertSubview:bgGifView atIndex:0];
+    NSString *videoPath = [[NSBundle mainBundle] pathForResource:@"bg" ofType:@"mp4"];
+    if (videoPath) {
+        NSURL *videoURL = [NSURL fileURLWithPath:videoPath];
+        AVPlayerItem *playerItem = [AVPlayerItem playerItemWithURL:videoURL];
+        AVQueuePlayer *player = [AVQueuePlayer queuePlayerWithItems:@[playerItem]];
+        player.volume = 0.0; // Mute audio
+        
+        AVPlayerLooper *looper = [AVPlayerLooper playerLooperWithPlayer:player templateItem:playerItem];
+        objc_setAssociatedObject(view, "ZXPlayerLooperKey", looper, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        objc_setAssociatedObject(view, "ZXPlayerKey", player, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        
+        AVPlayerLayer *playerLayer = [AVPlayerLayer playerLayerWithPlayer:player];
+        playerLayer.frame = view.bounds;
+        playerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
+        [view.layer insertSublayer:playerLayer atIndex:0];
+        [player play];
+    } else {
+        UIImageView *bgGifView = [[UIImageView alloc] initWithFrame:view.bounds];
+        bgGifView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        bgGifView.contentMode = UIViewContentModeScaleAspectFill;
+        bgGifView.clipsToBounds = YES;
+        bgGifView.image = ZXLoadAnimatedGIF(@"main bg.gif");
+        [view insertSubview:bgGifView atIndex:0];
+    }
     
     // Translucent dark overlay for crisp foreground legibility
     UIView *dimOverlay = [[UIView alloc] initWithFrame:view.bounds];
     dimOverlay.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    dimOverlay.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.38];
+    dimOverlay.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.35];
     [view insertSubview:dimOverlay atIndex:1];
 }
 
