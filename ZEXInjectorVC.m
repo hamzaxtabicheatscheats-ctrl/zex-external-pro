@@ -822,7 +822,17 @@ static void ZXApplyModernButton(UIButton *btn) {
 -(UIStatusBarStyle)preferredStatusBarStyle{return UIStatusBarStyleLightContent;}
 -(NSArray<ZXSlot*>*)currentSlots{
     if(!_cfg)return @[];
-    return _tab==0?_cfg.opt1:_tab==1?_cfg.opt2:_tab==2?_cfg.opt3:_tab==3?_cfg.opt4:@[];
+    NSArray<ZXSlot*>*raw = _tab==0?_cfg.opt1:_tab==1?_cfg.opt2:_tab==2?_cfg.opt3:_tab==3?_cfg.opt4:@[];
+    NSMutableArray<ZXSlot*>*filtered = [NSMutableArray array];
+    BOOL isMax = [self.selectedGameMode isEqualToString:@"FFMAX"];
+    for(ZXSlot* s in raw){
+        if(isMax){
+            if(s.ffmaxPath.length > 0) [filtered addObject:s];
+        } else {
+            if(s.ffthPath.length > 0) [filtered addObject:s];
+        }
+    }
+    return filtered;
 }
 -(NSString*)mcmBase{
     NSString*r=ZEXFileService.shared.virtualRoot;
@@ -841,16 +851,37 @@ static void ZXApplyModernButton(UIButton *btn) {
     if (_modeOverlay && _modeOverlay.superview) return;
     
     UIView *overlay = [[UIView alloc] initWithFrame:self.view.bounds];
-    overlay.backgroundColor = [UIColor colorWithRed:0.02 green:0.01 blue:0.03 alpha:0.92];
+    overlay.backgroundColor = [UIColor colorWithRed:0.04 green:0.01 blue:0.02 alpha:0.98];
     overlay.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     _modeOverlay = overlay;
     
-    UIView *card = ZXGlassView(22);
+    ZXAddModernBackground(overlay);
+    ZXAddFallingParticles(overlay);
+    
+    UILabel*brand=[UILabel new];brand.translatesAutoresizingMaskIntoConstraints=NO;
+    NSMutableAttributedString*bAtt=[[NSMutableAttributedString alloc]initWithString:@"ZEX EXTERNAL"];
+    [bAtt addAttribute:NSForegroundColorAttributeName value:ZXRed range:NSMakeRange(0,3)];
+    [bAtt addAttribute:NSForegroundColorAttributeName value:UIColor.whiteColor range:NSMakeRange(3,9)];
+    [bAtt addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:24 weight:UIFontWeightBlack] range:NSMakeRange(0,12)];
+    [bAtt addAttribute:NSKernAttributeName value:@2.0 range:NSMakeRange(0,12)];
+    brand.attributedText=bAtt;
+    brand.textAlignment = NSTextAlignmentCenter;
+    [overlay addSubview:brand];
+    
+    UILabel *headerSub = [UILabel new];
+    headerSub.translatesAutoresizingMaskIntoConstraints = NO;
+    headerSub.text = @"⚡ GAME EDITION SELECTOR";
+    headerSub.font = [UIFont monospacedSystemFontOfSize:11 weight:UIFontWeightBold];
+    headerSub.textColor = ZXRed;
+    headerSub.textAlignment = NSTextAlignmentCenter;
+    [overlay addSubview:headerSub];
+    
+    UIView *card = ZXGlassView(24);
     card.translatesAutoresizingMaskIntoConstraints = NO;
-    card.backgroundColor = [UIColor colorWithRed:0.07 green:0.02 blue:0.04 alpha:0.95];
-    card.layer.borderColor = [UIColor colorWithRed:0.95 green:0.12 blue:0.28 alpha:0.5].CGColor;
+    card.backgroundColor = [UIColor colorWithRed:0.06 green:0.02 blue:0.035 alpha:0.92];
+    card.layer.borderColor = [UIColor colorWithRed:0.95 green:0.12 blue:0.28 alpha:0.45].CGColor;
     card.layer.borderWidth = 1.2;
-    ZXRedGlow(card, 16);
+    ZXRedGlow(card, 18);
     [overlay addSubview:card];
     
     UIImageView *gameIcon = [UIImageView new];
@@ -862,7 +893,7 @@ static void ZXApplyModernButton(UIButton *btn) {
     
     UILabel *titleLbl = [UILabel new];
     titleLbl.translatesAutoresizingMaskIntoConstraints = NO;
-    titleLbl.text = @"SELECT GAME EDITION";
+    titleLbl.text = @"CHOOSE INSTALLED EDITION";
     titleLbl.font = [UIFont systemFontOfSize:17 weight:UIFontWeightBlack];
     titleLbl.textColor = UIColor.whiteColor;
     titleLbl.textAlignment = NSTextAlignmentCenter;
@@ -870,72 +901,77 @@ static void ZXApplyModernButton(UIButton *btn) {
     
     UILabel *subLbl = [UILabel new];
     subLbl.translatesAutoresizingMaskIntoConstraints = NO;
-    subLbl.text = @"Select your game version to apply injection paths:";
-    subLbl.font = [UIFont systemFontOfSize:11 weight:UIFontWeightMedium];
+    subLbl.text = @"Select your game version to load & display only the matching injection slots:";
+    subLbl.font = [UIFont systemFontOfSize:11.5 weight:UIFontWeightMedium];
     subLbl.textColor = [UIColor colorWithWhite:0.65 alpha:1.0];
-    subLbl.numberOfLines = 2;
+    subLbl.numberOfLines = 3;
     subLbl.textAlignment = NSTextAlignmentCenter;
     [card addSubview:subLbl];
     
     UIButton *btnNormal = [UIButton buttonWithType:UIButtonTypeCustom];
     btnNormal.translatesAutoresizingMaskIntoConstraints = NO;
-    btnNormal.backgroundColor = [UIColor colorWithRed:0.12 green:0.04 blue:0.06 alpha:0.9];
-    btnNormal.layer.cornerRadius = 14;
-    btnNormal.layer.borderWidth = 1.0;
-    btnNormal.layer.borderColor = [UIColor colorWithRed:0.95 green:0.12 blue:0.28 alpha:0.6].CGColor;
+    btnNormal.backgroundColor = [UIColor colorWithRed:0.08 green:0.03 blue:0.05 alpha:0.95];
+    btnNormal.layer.cornerRadius = 16;
+    btnNormal.layer.borderWidth = 1.2;
+    btnNormal.layer.borderColor = [UIColor colorWithRed:0.2 green:0.85 blue:0.4 alpha:0.6].CGColor;
+    btnNormal.tag = 100;
+    [btnNormal addTarget:self action:@selector(selectGameModeTap:) forControlEvents:UIControlEventTouchUpInside];
+    [card addSubview:btnNormal];
     
     UILabel *lblNormalTitle = [UILabel new];
     lblNormalTitle.translatesAutoresizingMaskIntoConstraints = NO;
     lblNormalTitle.text = @"⚡ FREE FIRE NORMAL";
-    lblNormalTitle.font = [UIFont systemFontOfSize:14 weight:UIFontWeightBlack];
+    lblNormalTitle.font = [UIFont systemFontOfSize:15 weight:UIFontWeightBlack];
     lblNormalTitle.textColor = UIColor.whiteColor;
     [btnNormal addSubview:lblNormalTitle];
     
     UILabel *lblNormalSub = [UILabel new];
     lblNormalSub.translatesAutoresizingMaskIntoConstraints = NO;
-    lblNormalSub.text = @"Standard Free Fire (TH) Edition";
-    lblNormalSub.font = [UIFont systemFontOfSize:10 weight:UIFontWeightMedium];
+    lblNormalSub.text = @"Standard Free Fire (TH) Edition • Load FF Normal Slots";
+    lblNormalSub.font = [UIFont systemFontOfSize:10.5 weight:UIFontWeightMedium];
     lblNormalSub.textColor = [UIColor colorWithRed:0.25 green:0.88 blue:0.45 alpha:0.95];
     [btnNormal addSubview:lblNormalSub];
     
-    btnNormal.tag = 100;
-    [btnNormal addTarget:self action:@selector(selectGameModeTap:) forControlEvents:UIControlEventTouchUpInside];
-    [card addSubview:btnNormal];
-    
     UIButton *btnMax = [UIButton buttonWithType:UIButtonTypeCustom];
     btnMax.translatesAutoresizingMaskIntoConstraints = NO;
-    btnMax.backgroundColor = [UIColor colorWithRed:0.12 green:0.04 blue:0.06 alpha:0.9];
-    btnMax.layer.cornerRadius = 14;
-    btnMax.layer.borderWidth = 1.0;
-    btnMax.layer.borderColor = [UIColor colorWithRed:0.95 green:0.12 blue:0.28 alpha:0.6].CGColor;
+    btnMax.backgroundColor = [UIColor colorWithRed:0.08 green:0.03 blue:0.05 alpha:0.95];
+    btnMax.layer.cornerRadius = 16;
+    btnMax.layer.borderWidth = 1.2;
+    btnMax.layer.borderColor = [UIColor colorWithRed:1.0 green:0.7 blue:0.2 alpha:0.6].CGColor;
+    btnMax.tag = 200;
+    [btnMax addTarget:self action:@selector(selectGameModeTap:) forControlEvents:UIControlEventTouchUpInside];
+    [card addSubview:btnMax];
     
     UILabel *lblMaxTitle = [UILabel new];
     lblMaxTitle.translatesAutoresizingMaskIntoConstraints = NO;
     lblMaxTitle.text = @"🔥 FREE FIRE MAX";
-    lblMaxTitle.font = [UIFont systemFontOfSize:14 weight:UIFontWeightBlack];
+    lblMaxTitle.font = [UIFont systemFontOfSize:15 weight:UIFontWeightBlack];
     lblMaxTitle.textColor = UIColor.whiteColor;
     [btnMax addSubview:lblMaxTitle];
     
     UILabel *lblMaxSub = [UILabel new];
     lblMaxSub.translatesAutoresizingMaskIntoConstraints = NO;
-    lblMaxSub.text = @"High-Graphics Free Fire MAX Edition";
-    lblMaxSub.font = [UIFont systemFontOfSize:10 weight:UIFontWeightMedium];
+    lblMaxSub.text = @"High-Graphics FF MAX Edition • Load FF MAX Slots";
+    lblMaxSub.font = [UIFont systemFontOfSize:10.5 weight:UIFontWeightMedium];
     lblMaxSub.textColor = [UIColor colorWithRed:1.0 green:0.75 blue:0.2 alpha:0.95];
     [btnMax addSubview:lblMaxSub];
     
-    btnMax.tag = 200;
-    [btnMax addTarget:self action:@selector(selectGameModeTap:) forControlEvents:UIControlEventTouchUpInside];
-    [card addSubview:btnMax];
-    
     [NSLayoutConstraint activateConstraints:@[
-        [card.centerXAnchor constraintEqualToAnchor:overlay.centerXAnchor],
-        [card.centerYAnchor constraintEqualToAnchor:overlay.centerYAnchor],
-        [card.widthAnchor constraintEqualToAnchor:overlay.widthAnchor multiplier:0.86],
+        [brand.topAnchor constraintEqualToAnchor:overlay.safeAreaLayoutGuide.topAnchor constant:18],
+        [brand.centerXAnchor constraintEqualToAnchor:overlay.centerXAnchor],
+        
+        [headerSub.topAnchor constraintEqualToAnchor:brand.bottomAnchor constant:4],
+        [headerSub.centerXAnchor constraintEqualToAnchor:overlay.centerXAnchor],
+        
+        [card.topAnchor constraintEqualToAnchor:headerSub.bottomAnchor constant:16],
+        [card.leadingAnchor constraintEqualToAnchor:overlay.leadingAnchor constant:18],
+        [card.trailingAnchor constraintEqualToAnchor:overlay.trailingAnchor constant:-18],
+        [card.bottomAnchor constraintEqualToAnchor:overlay.safeAreaLayoutGuide.bottomAnchor constant:-20],
         
         [gameIcon.topAnchor constraintEqualToAnchor:card.topAnchor constant:20],
         [gameIcon.centerXAnchor constraintEqualToAnchor:card.centerXAnchor],
-        [gameIcon.widthAnchor constraintEqualToConstant:36],
-        [gameIcon.heightAnchor constraintEqualToConstant:36],
+        [gameIcon.widthAnchor constraintEqualToConstant:40],
+        [gameIcon.heightAnchor constraintEqualToConstant:40],
         
         [titleLbl.topAnchor constraintEqualToAnchor:gameIcon.bottomAnchor constant:10],
         [titleLbl.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:14],
@@ -945,23 +981,22 @@ static void ZXApplyModernButton(UIButton *btn) {
         [subLbl.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:16],
         [subLbl.trailingAnchor constraintEqualToAnchor:card.trailingAnchor constant:-16],
         
-        [btnNormal.topAnchor constraintEqualToAnchor:subLbl.bottomAnchor constant:18],
+        [btnNormal.topAnchor constraintEqualToAnchor:subLbl.bottomAnchor constant:22],
         [btnNormal.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:16],
         [btnNormal.trailingAnchor constraintEqualToAnchor:card.trailingAnchor constant:-16],
-        [btnNormal.heightAnchor constraintEqualToConstant:54],
+        [btnNormal.heightAnchor constraintEqualToConstant:64],
         
-        [lblNormalTitle.topAnchor constraintEqualToAnchor:btnNormal.topAnchor constant:10],
+        [lblNormalTitle.topAnchor constraintEqualToAnchor:btnNormal.topAnchor constant:12],
         [lblNormalTitle.centerXAnchor constraintEqualToAnchor:btnNormal.centerXAnchor],
         [lblNormalSub.topAnchor constraintEqualToAnchor:lblNormalTitle.bottomAnchor constant:3],
         [lblNormalSub.centerXAnchor constraintEqualToAnchor:btnNormal.centerXAnchor],
         
-        [btnMax.topAnchor constraintEqualToAnchor:btnNormal.bottomAnchor constant:12],
+        [btnMax.topAnchor constraintEqualToAnchor:btnNormal.bottomAnchor constant:16],
         [btnMax.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:16],
         [btnMax.trailingAnchor constraintEqualToAnchor:card.trailingAnchor constant:-16],
-        [btnMax.heightAnchor constraintEqualToConstant:54],
-        [btnMax.bottomAnchor constraintEqualToAnchor:card.bottomAnchor constant:-20],
+        [btnMax.heightAnchor constraintEqualToConstant:64],
         
-        [lblMaxTitle.topAnchor constraintEqualToAnchor:btnMax.topAnchor constant:10],
+        [lblMaxTitle.topAnchor constraintEqualToAnchor:btnMax.topAnchor constant:12],
         [lblMaxTitle.centerXAnchor constraintEqualToAnchor:btnMax.centerXAnchor],
         [lblMaxSub.topAnchor constraintEqualToAnchor:lblMaxTitle.bottomAnchor constant:3],
         [lblMaxSub.centerXAnchor constraintEqualToAnchor:btnMax.centerXAnchor],
@@ -969,7 +1004,7 @@ static void ZXApplyModernButton(UIButton *btn) {
     
     overlay.alpha = 0;
     [self.view addSubview:overlay];
-    [UIView animateWithDuration:0.3 animations:^{
+    [UIView animateWithDuration:0.35 animations:^{
         overlay.alpha = 1.0;
     }];
 }
@@ -983,6 +1018,7 @@ static void ZXApplyModernButton(UIButton *btn) {
         _modeBadgeLbl.text = @"🔥 FF MAX";
         _modeBadgeLbl.textColor = [UIColor colorWithRed:1.0 green:0.75 blue:0.2 alpha:1.0];
     }
+    [_tv reloadData];
     
     if (_modeOverlay) {
         [UIView animateWithDuration:0.25 animations:^{
