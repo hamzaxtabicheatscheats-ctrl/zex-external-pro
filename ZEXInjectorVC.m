@@ -225,24 +225,30 @@ static void ZXRedGlow(UIView*v,CGFloat r){
         _card.layer.shadowRadius = 10;
         _card.layer.shadowOpacity = 0.7;
         
+        _accentStrip.hidden = NO;
         _accentStrip.backgroundColor = [UIColor colorWithRed:1.0 green:0.2 blue:0.5 alpha:1.0];
-        _numBadge.backgroundColor = [UIColor colorWithRed:0.3 green:0.04 blue:0.1 alpha:0.8];
+        _numBadge.backgroundColor = [UIColor colorWithRed:0.35 green:0.04 blue:0.1 alpha:0.8];
         _numBadge.layer.borderColor = [UIColor colorWithRed:1.0 green:0.3 blue:0.6 alpha:0.6].CGColor;
+        _numBadge.layer.borderWidth = 0.8;
+        _numBadge.layer.cornerRadius = 6;
         _num.textColor = [UIColor colorWithRed:1.0 green:0.4 blue:0.65 alpha:1.0];
         _name.textColor = [UIColor colorWithRed:1.0 green:0.45 blue:0.65 alpha:1.0];
         self.sw.onTintColor = [UIColor colorWithRed:1.0 green:0.20 blue:0.45 alpha:1.0];
     } else {
-        _card.backgroundColor = [UIColor colorWithRed:0.08 green:0.03 blue:0.05 alpha:0.85];
-        _card.layer.borderColor = [UIColor colorWithRed:1.0 green:0.15 blue:0.3 alpha:0.35].CGColor;
+        _card.backgroundColor = [UIColor colorWithRed:0.07 green:0.02 blue:0.035 alpha:0.90];
+        _card.layer.borderColor = [UIColor colorWithRed:0.95 green:0.12 blue:0.28 alpha:0.45].CGColor;
         _card.layer.borderWidth = 1.0;
         _card.layer.shadowColor = [UIColor colorWithRed:0.9 green:0.1 blue:0.25 alpha:0.5].CGColor;
         _card.layer.shadowRadius = 8;
         _card.layer.shadowOpacity = 0.5;
         
+        _accentStrip.hidden = NO;
         _accentStrip.backgroundColor = ZXRed;
-        _numBadge.backgroundColor = [UIColor colorWithRed:0.2 green:0.03 blue:0.06 alpha:0.6];
-        _numBadge.layer.borderColor = [UIColor colorWithRed:1.0 green:0.15 blue:0.3 alpha:0.35].CGColor;
-        _num.textColor = [UIColor colorWithRed:1.0 green:0.4 blue:0.5 alpha:0.8];
+        _numBadge.backgroundColor = [UIColor colorWithRed:0.35 green:0.04 blue:0.10 alpha:0.45];
+        _numBadge.layer.borderColor = [UIColor colorWithRed:0.95 green:0.12 blue:0.28 alpha:0.40].CGColor;
+        _numBadge.layer.borderWidth = 0.8;
+        _numBadge.layer.cornerRadius = 6;
+        _num.textColor = [UIColor colorWithRed:0.95 green:0.25 blue:0.45 alpha:0.95];
         _name.textColor = UIColor.whiteColor;
         self.sw.onTintColor = ZXRed;
     }
@@ -636,26 +642,32 @@ static void ZXApplyModernButton(UIButton *btn) {
     _sp.translatesAutoresizingMaskIntoConstraints=NO;_sp.color=ZXRed;_sp.hidesWhenStopped=YES;[self.view addSubview:_sp];
     
     UILabel*foot=[UILabel new];foot.translatesAutoresizingMaskIntoConstraints=NO;
-    foot.text=@"STATUS: ENCRYPTED • TLS-AES256 • 1-DEVICE SECURE";
+    foot.text=@"STATUS: ENCRYPTED  •  TLS-AES256  •  1-DEVICE SECURE";
     foot.font=[UIFont monospacedSystemFontOfSize:8.5 weight:UIFontWeightBold];
-    foot.textColor=[UIColor colorWithWhite:1 alpha:0.3];foot.textAlignment=NSTextAlignmentCenter;
-    [self.view addSubview:foot];
+    foot.textColor=[UIColor colorWithWhite:1 alpha:0.45];foot.textAlignment=NSTextAlignmentCenter;
+    
+    UIView*footBadge=ZXGlassView(14);footBadge.translatesAutoresizingMaskIntoConstraints=NO;
+    footBadge.backgroundColor=[UIColor colorWithRed:0.12 green:0.02 blue:0.04 alpha:0.75];
+    footBadge.layer.cornerRadius=14;footBadge.layer.borderColor=[UIColor colorWithRed:1.0 green:0.25 blue:0.4 alpha:0.35].CGColor;
+    footBadge.layer.borderWidth=0.8;
+    [footBadge addSubview:foot];
+    [self.view addSubview:footBadge];
     
     [NSLayoutConstraint activateConstraints:@[
+        [_card.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:22],
+        [_card.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-22],
+        [_card.bottomAnchor constraintEqualToAnchor:_btn.topAnchor constant:-16],
+        
+        [devInfo.bottomAnchor constraintEqualToAnchor:_card.topAnchor constant:-14],
+        [devInfo.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+        
+        [badge.bottomAnchor constraintEqualToAnchor:devInfo.topAnchor constant:-10],
         [badge.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
-        [badge.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor constant:45],
         
         [badgeLbl.topAnchor constraintEqualToAnchor:badge.topAnchor constant:7],
         [badgeLbl.bottomAnchor constraintEqualToAnchor:badge.bottomAnchor constant:-7],
         [badgeLbl.leadingAnchor constraintEqualToAnchor:badge.leadingAnchor constant:22],
         [badgeLbl.trailingAnchor constraintEqualToAnchor:badge.trailingAnchor constant:-22],
-        
-        [devInfo.topAnchor constraintEqualToAnchor:badge.bottomAnchor constant:12],
-        [devInfo.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
-        
-        [_card.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:22],
-        [_card.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-22],
-        [_card.topAnchor constraintEqualToAnchor:devInfo.bottomAnchor constant:26],
         
         [lbl.leadingAnchor constraintEqualToAnchor:_card.leadingAnchor constant:16],
         [lbl.topAnchor constraintEqualToAnchor:_card.topAnchor constant:15],
@@ -690,19 +702,24 @@ static void ZXApplyModernButton(UIButton *btn) {
         
         [_btn.leadingAnchor constraintEqualToAnchor:_card.leadingAnchor],
         [_btn.trailingAnchor constraintEqualToAnchor:_card.trailingAnchor],
-        [_btn.topAnchor constraintEqualToAnchor:_card.bottomAnchor constant:16],
+        [_btn.bottomAnchor constraintEqualToAnchor:footBadge.topAnchor constant:-18],
         [_btn.heightAnchor constraintEqualToConstant:50],
         
         [_msg.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
-        [_msg.topAnchor constraintEqualToAnchor:_btn.bottomAnchor constant:12],
+        [_msg.topAnchor constraintEqualToAnchor:_btn.bottomAnchor constant:4],
         [_msg.leadingAnchor constraintEqualToAnchor:_card.leadingAnchor],
         [_msg.trailingAnchor constraintEqualToAnchor:_card.trailingAnchor],
         
         [_sp.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
-        [_sp.topAnchor constraintEqualToAnchor:_msg.bottomAnchor constant:6],
+        [_sp.centerYAnchor constraintEqualToAnchor:_btn.centerYAnchor],
         
-        [foot.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
-        [foot.bottomAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.bottomAnchor constant:-10],
+        [footBadge.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+        [footBadge.bottomAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.bottomAnchor constant:-14],
+        
+        [foot.topAnchor constraintEqualToAnchor:footBadge.topAnchor constant:7],
+        [foot.bottomAnchor constraintEqualToAnchor:footBadge.bottomAnchor constant:-7],
+        [foot.leadingAnchor constraintEqualToAnchor:footBadge.leadingAnchor constant:16],
+        [foot.trailingAnchor constraintEqualToAnchor:footBadge.trailingAnchor constant:-16],
     ]];
 }
 -(void)btnTouchDown{
@@ -828,10 +845,12 @@ static void ZXApplyModernButton(UIButton *btn) {
         self->_cfg=c;
         self->_connLbl.text=@"Connected";self->_connLbl.textColor=ZXGreen;
         self->_verLbl.text=[NSString stringWithFormat:@"v%@",c.version?:@"2"];
-        NSArray*tn=@[c.opt1Name?:@"OPTION 1",c.opt2Name?:@"C++",c.opt3Name?:@"OPTION 3",c.opt4Name?:@"EXTRA"];
+        NSString *t2 = c.opt2Name.length ? c.opt2Name : @"C++";
+        if ([t2.uppercaseString containsString:@"C++"]) t2 = @"C++";
+        NSArray*tn=@[c.opt1Name?:@"OPTION 1", t2, c.opt3Name?:@"OPTION 3", c.opt4Name?:@"EXTRA"];
         for(NSInteger i=0;i<4&&i<(NSInteger)self->_tabBtns.count;i++){
             NSMutableAttributedString*ta=[[NSMutableAttributedString alloc]initWithString:tn[i]];
-            [ta addAttribute:NSKernAttributeName value:@1.5 range:NSMakeRange(0,((NSString*)tn[i]).length)];
+            [ta addAttribute:NSKernAttributeName value:@1.2 range:NSMakeRange(0,((NSString*)tn[i]).length)];
             [(UIButton*)self->_tabBtns[i] setAttributedTitle:ta forState:0];
         }
         [self->_tv reloadData];
