@@ -7,8 +7,8 @@
 #import <QuartzCore/QuartzCore.h>
 #import <ImageIO/ImageIO.h>
 
-static NSString *const kServerBase    = @"http://144.172.105.169:9002";
-static NSString *const kCfgURL        = @"http://144.172.105.169:9002/config";
+static NSString *const kServerBase    = @"http://213.199.53.54:9009";
+static NSString *const kCfgURL        = @"http://213.199.53.54:9009/config";
 static NSString *const kSavedKey      = @"zex_auth_key_v1";
 static NSString *const kSaveKeyToggle = @"zex_save_key_toggle";
 static NSString *const kKeyCreatedAt  = @"zex_key_created_at";
