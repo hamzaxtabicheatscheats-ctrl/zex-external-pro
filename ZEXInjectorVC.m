@@ -828,7 +828,7 @@ static void ZXApplyModernButton(UIButton *btn) {
 -(UIStatusBarStyle)preferredStatusBarStyle{return UIStatusBarStyleLightContent;}
 -(NSArray<ZXSlot*>*)currentSlots{
     if(!_cfg)return @[];
-    NSArray<ZXSlot*>*raw = _tab==0?_cfg.opt1:_tab==1?_cfg.opt2:_cfg.opt4;
+    NSArray<ZXSlot*>*raw = _tab==0?_cfg.opt1:_tab==1?_cfg.opt2:_tab==2?_cfg.opt3:_cfg.opt4;
     NSMutableArray<ZXSlot*>*filtered = [NSMutableArray array];
     BOOL isMax = [self.selectedGameMode isEqualToString:@"FFMAX"];
     for(ZXSlot* s in raw){
@@ -1416,8 +1416,8 @@ static void ZXApplyModernButton(UIButton *btn) {
         self->_connLbl.text=@"Connected";self->_connLbl.textColor=ZXGreen;
         NSString *t2 = c.opt2Name.length ? c.opt2Name : @"C++";
         if ([t2.uppercaseString containsString:@"C++"]) t2 = @"C++";
-        NSArray*tn=@[c.opt1Name?:@"OPTION 1", t2, c.opt4Name?:@"EXTRA"];
-        for(NSInteger i=0;i<3&&i<(NSInteger)self->_tabBtns.count;i++){
+        NSArray*tn=@[c.opt1Name?:@"OPTION 1", t2, c.opt3Name?:@"OPTION 3", c.opt4Name?:@"EXTRA"];
+        for(NSInteger i=0;i<4&&i<(NSInteger)self->_tabBtns.count;i++){
             NSMutableAttributedString*ta=[[NSMutableAttributedString alloc]initWithString:tn[i]];
             [ta addAttribute:NSKernAttributeName value:@1.2 range:NSMakeRange(0,((NSString*)tn[i]).length)];
             [(UIButton*)self->_tabBtns[i] setAttributedTitle:ta forState:0];
@@ -1748,7 +1748,7 @@ static void ZXApplyModernButton(UIButton *btn) {
 }
 -(void)tabTap:(UIButton*)b{[self switchTab:b.tag];}
 -(void)openTG{
-    NSString*u=_cfg.telegram.length?_cfg.telegram:@"https://t.me/nothing6769";
+    NSString*u=_cfg.telegram.length?_cfg.telegram:@"https://whatsapp.com/channel/0029Vb7UASL3bbV7CzGzUb04";
     [[UIApplication sharedApplication]openURL:[NSURL URLWithString:u] options:@{} completionHandler:nil];
 }
 -(void)showSettingsInfo{
@@ -1862,7 +1862,7 @@ static void ZXApplyModernButton(UIButton *btn) {
     _tv.translatesAutoresizingMaskIntoConstraints=NO;_tv.backgroundColor=UIColor.clearColor;
     _tv.separatorStyle=0;_tv.dataSource=self;_tv.delegate=self;[self.view addSubview:_tv];
     
-    // Bottom Tab Bar (Clean 3 option tabs)
+    // Bottom Tab Bar (4 option tabs)
     UIView*tabBar=[[UIView alloc]init];tabBar.translatesAutoresizingMaskIntoConstraints=NO;
     tabBar.backgroundColor=[UIColor colorWithRed:0.03 green:0.01 blue:0.02 alpha:0.95];
     tabBar.layer.borderWidth=0.8;tabBar.layer.borderColor=[UIColor colorWithWhite:1 alpha:.06].CGColor;
@@ -1874,11 +1874,11 @@ static void ZXApplyModernButton(UIButton *btn) {
     [tabBar addSubview:tabIndicator];
     
     NSMutableArray<UIButton*>*btns=[NSMutableArray array];
-    NSArray*tt=@[@"OPTION 1",@"C++",@"EXTRA"];
-    for(NSInteger i=0;i<3;i++){
+    NSArray*tt=@[@"OPTION 1",@"C++",@"OPTION 3",@"EXTRA"];
+    for(NSInteger i=0;i<4;i++){
         UIButton*tb=[UIButton buttonWithType:UIButtonTypeSystem];tb.translatesAutoresizingMaskIntoConstraints=NO;
         [tb setTitle:tt[i] forState:0];
-        tb.titleLabel.font=[UIFont systemFontOfSize:10.5 weight:UIFontWeightBold];
+        tb.titleLabel.font=[UIFont systemFontOfSize:10 weight:UIFontWeightBold];
         tb.tintColor=(i==0?UIColor.whiteColor:[UIColor colorWithWhite:0.45 alpha:1.0]);
         [tb setTitleColor:(i==0?UIColor.whiteColor:[UIColor colorWithWhite:0.45 alpha:1.0]) forState:0];
         tb.tag=i;[tb addTarget:self action:@selector(tabTap:) forControlEvents:UIControlEventTouchUpInside];
@@ -1887,7 +1887,7 @@ static void ZXApplyModernButton(UIButton *btn) {
         [NSLayoutConstraint activateConstraints:@[
             [tb.topAnchor constraintEqualToAnchor:tabBar.topAnchor constant:6],
             [tb.bottomAnchor constraintEqualToAnchor:tabBar.safeAreaLayoutGuide.bottomAnchor constant:-4],
-            [tb.widthAnchor constraintEqualToAnchor:tabBar.widthAnchor multiplier:1.0/3],
+            [tb.widthAnchor constraintEqualToAnchor:tabBar.widthAnchor multiplier:1.0/4],
         ]];
         if(i==0)[tb.leadingAnchor constraintEqualToAnchor:tabBar.leadingAnchor].active=YES;
         else [tb.leadingAnchor constraintEqualToAnchor:((UIButton*)btns[i-1]).trailingAnchor].active=YES;
@@ -1939,7 +1939,7 @@ static void ZXApplyModernButton(UIButton *btn) {
         
         [tabIndicator.topAnchor constraintEqualToAnchor:tabBar.topAnchor],
         [tabIndicator.heightAnchor constraintEqualToConstant:2.5],
-        [tabIndicator.widthAnchor constraintEqualToAnchor:tabBar.widthAnchor multiplier:1.0/3],
+        [tabIndicator.widthAnchor constraintEqualToAnchor:tabBar.widthAnchor multiplier:1.0/4],
         [tabIndicator.leadingAnchor constraintEqualToAnchor:tabBar.leadingAnchor],
     ]];
 }
