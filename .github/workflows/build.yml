@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-13
 
     steps:
       - name: Checkout Repository
@@ -27,5 +27,5 @@ jobs:
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: bankai-ZEXInjector-IPA
+          name: ZEX-PRO-IPA
           path: bankai-ZEXInjector.ipa
