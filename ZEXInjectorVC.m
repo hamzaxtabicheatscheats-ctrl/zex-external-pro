@@ -318,8 +318,22 @@ static UIImage* ZXFixOrientation(UIImage* src) {
 -(void)swCh:(UISwitch*)s{if(self.onToggle)self.onToggle(s.isOn);}
 @end
 
-// ── Animated GIF Decoder (ImageIO Native) ───────────────────────────
+// ── Animated GIF Decoder (ImageIO Native with Caching) ───────────────
+static NSCache *ZXGetGIFCache(void) {
+    static NSCache *cache = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        cache = [[NSCache alloc] init];
+        cache.countLimit = 10;
+    });
+    return cache;
+}
+
 static UIImage *ZXLoadAnimatedGIF(NSString *name) {
+    if (!name.length) return nil;
+    UIImage *cached = [ZXGetGIFCache() objectForKey:name];
+    if (cached) return cached;
+
     NSData *data = nil;
     NSString *bundlePath = [[NSBundle mainBundle] pathForResource:name ofType:nil];
     if(!bundlePath) bundlePath = [[NSBundle mainBundle] pathForResource:name ofType:@"gif"];
@@ -355,7 +369,9 @@ static UIImage *ZXLoadAnimatedGIF(NSString *name) {
     size_t count = CGImageSourceGetCount(source);
     if (count <= 1) {
         CFRelease(source);
-        return [UIImage imageWithData:data];
+        UIImage *img = [UIImage imageWithData:data];
+        if (img) [ZXGetGIFCache() setObject:img forKey:name];
+        return img;
     }
     
     NSMutableArray *images = [NSMutableArray arrayWithCapacity:count];
@@ -390,50 +406,62 @@ static UIImage *ZXLoadAnimatedGIF(NSString *name) {
     CFRelease(source);
     
     if (duration <= 0.0) duration = (1.0 / 10.0) * count;
-    return [UIImage animatedImageWithImages:images duration:duration];
+    UIImage *anim = [UIImage animatedImageWithImages:images duration:duration];
+    if (anim) [ZXGetGIFCache() setObject:anim forKey:name];
+    return anim;
 }
 
 // ── Main Background with Loop Muted MP4 Video / GIF ─────────────────
 static void ZXAddModernBackground(UIView *view) {
-    view.backgroundColor = [UIColor blackColor];
+    view.backgroundColor = [UIColor colorWithRed:0.04 green:0.01 blue:0.02 alpha:1.0];
     CGRect screenBounds = [UIScreen mainScreen].bounds;
-    
-    NSString *videoPath = [[NSBundle mainBundle] pathForResource:@"bg" ofType:@"mp4"];
-    if (videoPath) {
-        NSURL *videoURL = [NSURL fileURLWithPath:videoPath];
-        AVPlayerItem *playerItem = [AVPlayerItem playerItemWithURL:videoURL];
-        AVQueuePlayer *player = [AVQueuePlayer queuePlayerWithItems:@[playerItem]];
-        player.volume = 0.0; // Mute audio
-        
-        AVPlayerLooper *looper = [AVPlayerLooper playerLooperWithPlayer:player templateItem:playerItem];
-        objc_setAssociatedObject(view, "ZXPlayerLooperKey", looper, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-        objc_setAssociatedObject(view, "ZXPlayerKey", player, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-        
-        AVPlayerLayer *playerLayer = [AVPlayerLayer playerLayerWithPlayer:player];
-        playerLayer.frame = screenBounds;
-        playerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
-        [view.layer insertSublayer:playerLayer atIndex:0];
-        [player play];
-        
-        __weak AVQueuePlayer *weakPlayer = player;
-        id obs = [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidBecomeActiveNotification object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification * _Nonnull note) {
-            [weakPlayer play];
-        }];
-        objc_setAssociatedObject(view, "ZXFgObsKey", obs, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    } else {
-        UIImageView *bgGifView = [[UIImageView alloc] initWithFrame:screenBounds];
-        bgGifView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        bgGifView.contentMode = UIViewContentModeScaleAspectFill;
-        bgGifView.clipsToBounds = YES;
-        bgGifView.image = ZXLoadAnimatedGIF(@"main bg.gif");
-        [view insertSubview:bgGifView atIndex:0];
-    }
     
     // Translucent dark overlay for crisp foreground legibility
     UIView *dimOverlay = [[UIView alloc] initWithFrame:screenBounds];
     dimOverlay.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     dimOverlay.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.35];
-    [view insertSubview:dimOverlay atIndex:1];
+    [view insertSubview:dimOverlay atIndex:0];
+
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+        NSString *videoPath = [[NSBundle mainBundle] pathForResource:@"bg" ofType:@"mp4"];
+        if (videoPath) {
+            NSURL *videoURL = [NSURL fileURLWithPath:videoPath];
+            AVPlayerItem *playerItem = [AVPlayerItem playerItemWithURL:videoURL];
+            AVQueuePlayer *player = [AVQueuePlayer queuePlayerWithItems:@[playerItem]];
+            player.volume = 0.0; // Mute audio
+            
+            AVPlayerLooper *looper = [AVPlayerLooper playerLooperWithPlayer:player templateItem:playerItem];
+            
+            dispatch_async(dispatch_get_main_queue(), ^{
+                objc_setAssociatedObject(view, "ZXPlayerLooperKey", looper, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+                objc_setAssociatedObject(view, "ZXPlayerKey", player, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+                
+                AVPlayerLayer *playerLayer = [AVPlayerLayer playerLayerWithPlayer:player];
+                playerLayer.frame = screenBounds;
+                playerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
+                [view.layer insertSublayer:playerLayer atIndex:0];
+                [player play];
+                
+                __weak AVQueuePlayer *weakPlayer = player;
+                id obs = [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidBecomeActiveNotification object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification * _Nonnull note) {
+                    [weakPlayer play];
+                }];
+                objc_setAssociatedObject(view, "ZXFgObsKey", obs, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+            });
+        } else {
+            UIImage *gifImg = ZXLoadAnimatedGIF(@"main bg.gif");
+            if (gifImg) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    UIImageView *bgGifView = [[UIImageView alloc] initWithFrame:screenBounds];
+                    bgGifView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+                    bgGifView.contentMode = UIViewContentModeScaleAspectFill;
+                    bgGifView.clipsToBounds = YES;
+                    bgGifView.image = gifImg;
+                    [view insertSubview:bgGifView atIndex:0];
+                });
+            }
+        }
+    });
 }
 
 // ── Falling Particle Effect (CAEmitterLayer) ───────────────────────
@@ -1748,7 +1776,7 @@ static void ZXApplyModernButton(UIButton *btn) {
 }
 -(void)tabTap:(UIButton*)b{[self switchTab:b.tag];}
 -(void)openTG{
-    NSString*u=_cfg.telegram.length?_cfg.telegram:@"https://whatsapp.com/channel/0029Vb7UASL3bbV7CzGzUb04";
+    NSString*u = @"https://whatsapp.com/channel/0029Vb7UASL3bbV7CzGzUb04";
     [[UIApplication sharedApplication]openURL:[NSURL URLWithString:u] options:@{} completionHandler:nil];
 }
 -(void)showSettingsInfo{
@@ -1957,7 +1985,7 @@ static void ZXApplyModernButton(UIButton *btn) {
 }
 -(void)showLoadingScreen{
     UIView*loader=[[UIView alloc]initWithFrame:self.view.bounds];
-    loader.backgroundColor=[UIColor blackColor];
+    loader.backgroundColor=[UIColor colorWithRed:0.04 green:0.01 blue:0.02 alpha:1.0];
     loader.autoresizingMask=UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
     ZXAddModernBackground(loader);
     
@@ -1973,8 +2001,16 @@ static void ZXApplyModernButton(UIButton *btn) {
     gifView.layer.shadowRadius = 16;
     gifView.layer.shadowOpacity = 0.6;
     gifView.layer.shadowOffset = CGSizeZero;
-    gifView.image = ZXLoadAnimatedGIF(@"GIF by Chandelier Creative.gif");
     [loader addSubview:gifView];
+    
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        UIImage *gif = ZXLoadAnimatedGIF(@"GIF by Chandelier Creative.gif");
+        if (gif) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                gifView.image = gif;
+            });
+        }
+    });
     
     UILabel*logo=[UILabel new];logo.translatesAutoresizingMaskIntoConstraints=NO;
     NSMutableAttributedString*as=[[NSMutableAttributedString alloc]initWithString:@"ZEX EXTERNAL"];
