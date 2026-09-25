@@ -39,7 +39,7 @@ clang -arch arm64 -isysroot "$SDK" -miphoneos-version-min=15.0 \
   -framework UIKit -framework Foundation -framework CoreFoundation \
   -framework Security -framework QuartzCore -framework AVFoundation \
   -framework AudioToolbox -framework ImageIO -framework CoreGraphics \
-  -lz \
+  -lz -lcompression \
   -o ZEXInjector \
   "${OBJS[@]}"
 
