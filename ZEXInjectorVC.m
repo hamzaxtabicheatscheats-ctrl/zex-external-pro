@@ -1204,9 +1204,6 @@ static void ZXApplyModernButton(UIButton *btn) {
     
     [self presentViewController:ac animated:YES completion:nil];
 }
-// ── Build UI ──────────────────────────────────────────────────────
--(void)buildUI{
-    // Header
 -(void)buildUI{
     // Brand header (Top-left: ZEX EXTERNAL)
     UILabel*brand=[UILabel new];brand.translatesAutoresizingMaskIntoConstraints=NO;
