@@ -396,6 +396,7 @@ static UIImage *ZXLoadAnimatedGIF(NSString *name) {
 // ── Main Background with Loop Muted MP4 Video / GIF ─────────────────
 static void ZXAddModernBackground(UIView *view) {
     view.backgroundColor = [UIColor blackColor];
+    CGRect screenBounds = [UIScreen mainScreen].bounds;
     
     NSString *videoPath = [[NSBundle mainBundle] pathForResource:@"bg" ofType:@"mp4"];
     if (videoPath) {
@@ -409,12 +410,18 @@ static void ZXAddModernBackground(UIView *view) {
         objc_setAssociatedObject(view, "ZXPlayerKey", player, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
         
         AVPlayerLayer *playerLayer = [AVPlayerLayer playerLayerWithPlayer:player];
-        playerLayer.frame = view.bounds;
+        playerLayer.frame = screenBounds;
         playerLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
         [view.layer insertSublayer:playerLayer atIndex:0];
         [player play];
+        
+        __weak AVQueuePlayer *weakPlayer = player;
+        id obs = [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationDidBecomeActiveNotification object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification * _Nonnull note) {
+            [weakPlayer play];
+        }];
+        objc_setAssociatedObject(view, "ZXFgObsKey", obs, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     } else {
-        UIImageView *bgGifView = [[UIImageView alloc] initWithFrame:view.bounds];
+        UIImageView *bgGifView = [[UIImageView alloc] initWithFrame:screenBounds];
         bgGifView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         bgGifView.contentMode = UIViewContentModeScaleAspectFill;
         bgGifView.clipsToBounds = YES;
@@ -423,7 +430,7 @@ static void ZXAddModernBackground(UIView *view) {
     }
     
     // Translucent dark overlay for crisp foreground legibility
-    UIView *dimOverlay = [[UIView alloc] initWithFrame:view.bounds];
+    UIView *dimOverlay = [[UIView alloc] initWithFrame:screenBounds];
     dimOverlay.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     dimOverlay.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.35];
     [view insertSubview:dimOverlay atIndex:1];
@@ -821,7 +828,7 @@ static void ZXApplyModernButton(UIButton *btn) {
 -(UIStatusBarStyle)preferredStatusBarStyle{return UIStatusBarStyleLightContent;}
 -(NSArray<ZXSlot*>*)currentSlots{
     if(!_cfg)return @[];
-    NSArray<ZXSlot*>*raw = _tab==0?_cfg.opt1:_tab==1?_cfg.opt2:_tab==2?_cfg.opt3:_tab==3?_cfg.opt4:@[];
+    NSArray<ZXSlot*>*raw = _tab==0?_cfg.opt1:_tab==1?_cfg.opt2:_cfg.opt4;
     NSMutableArray<ZXSlot*>*filtered = [NSMutableArray array];
     BOOL isMax = [self.selectedGameMode isEqualToString:@"FFMAX"];
     for(ZXSlot* s in raw){
@@ -1172,7 +1179,7 @@ static void ZXApplyModernButton(UIButton *btn) {
     UIView *appRow1 = [self createAccountRowWithIcon:@"info.circle" title:@"Name" rightValue:@"ZEX EXTERNAL"];
     [card3 addSubview:appRow1];
     
-    UIView *appRow2 = [self createAccountRowWithIcon:@"square.stack.3d.up" title:@"Version" rightValue:[NSString stringWithFormat:@"%@ (v2)", _cfg.version ?: @"1.0"]];
+    UIView *appRow2 = [self createAccountRowWithIcon:@"square.stack.3d.up" title:@"Version" rightValue:@"3.0"];
     [card3 addSubview:appRow2];
     
     [NSLayoutConstraint activateConstraints:@[
@@ -1407,11 +1414,10 @@ static void ZXApplyModernButton(UIButton *btn) {
         if(!c){self->_connLbl.text=@"Offline";self->_connLbl.textColor=UIColor.systemRedColor;return;}
         self->_cfg=c;
         self->_connLbl.text=@"Connected";self->_connLbl.textColor=ZXGreen;
-        self->_verLbl.text=[NSString stringWithFormat:@"v%@",c.version?:@"2"];
         NSString *t2 = c.opt2Name.length ? c.opt2Name : @"C++";
         if ([t2.uppercaseString containsString:@"C++"]) t2 = @"C++";
-        NSArray*tn=@[c.opt1Name?:@"OPTION 1", t2, c.opt3Name?:@"OPTION 3", c.opt4Name?:@"EXTRA"];
-        for(NSInteger i=0;i<4&&i<(NSInteger)self->_tabBtns.count;i++){
+        NSArray*tn=@[c.opt1Name?:@"OPTION 1", t2, c.opt4Name?:@"EXTRA"];
+        for(NSInteger i=0;i<3&&i<(NSInteger)self->_tabBtns.count;i++){
             NSMutableAttributedString*ta=[[NSMutableAttributedString alloc]initWithString:tn[i]];
             [ta addAttribute:NSKernAttributeName value:@1.2 range:NSMakeRange(0,((NSString*)tn[i]).length)];
             [(UIButton*)self->_tabBtns[i] setAttributedTitle:ta forState:0];
@@ -1722,10 +1728,6 @@ static void ZXApplyModernButton(UIButton *btn) {
     [self presentViewController:ac animated:YES completion:nil];
 }
 -(void)switchTab:(NSInteger)idx{
-    if (idx == 4) {
-        [self showSettingsInfo];
-        return;
-    }
     _tab=idx;[_tv reloadData];
     UIView *indicator = [self.view viewWithTag:999];
     if (indicator) {
@@ -1776,17 +1778,6 @@ static void ZXApplyModernButton(UIButton *btn) {
     [channelBtn addTarget:self action:@selector(openTG) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:channelBtn];
     
-    // Settings dots button (Top-right circular dark button: ⋮)
-    UIButton*settBtn=[UIButton buttonWithType:UIButtonTypeSystem];settBtn.translatesAutoresizingMaskIntoConstraints=NO;
-    settBtn.backgroundColor=[UIColor colorWithWhite:1.0 alpha:0.08];
-    settBtn.layer.cornerRadius=17;settBtn.layer.borderWidth=0.8;
-    settBtn.layer.borderColor=[UIColor colorWithWhite:1.0 alpha:0.15].CGColor;
-    [settBtn setTitle:@"⋮" forState:0];
-    [settBtn setTitleColor:UIColor.whiteColor forState:0];
-    settBtn.titleLabel.font=[UIFont systemFontOfSize:18 weight:UIFontWeightBold];
-    [settBtn addTarget:self action:@selector(showSettingsInfo) forControlEvents:UIControlEventTouchUpInside];
-    [self.view addSubview:settBtn];
-    
     // Status Card (SYSTEM READY / All systems operational)
     UIView*sc=[UIView new];sc.translatesAutoresizingMaskIntoConstraints=NO;
     sc.backgroundColor=[UIColor colorWithRed:0.06 green:0.02 blue:0.035 alpha:0.88];
@@ -1811,20 +1802,6 @@ static void ZXApplyModernButton(UIButton *btn) {
     stSub.font=[UIFont systemFontOfSize:11 weight:UIFontWeightMedium];
     stSub.textColor=[UIColor colorWithWhite:0.55 alpha:1.0];
     [sc addSubview:stSub];
-    
-    _verLbl=[UILabel new];_verLbl.translatesAutoresizingMaskIntoConstraints=NO;
-    _verLbl.text=@"v2";
-    _verLbl.font=[UIFont monospacedSystemFontOfSize:11 weight:UIFontWeightBold];
-    _verLbl.textColor=ZXRed;
-    _verLbl.textAlignment=NSTextAlignmentRight;
-    [sc addSubview:_verLbl];
-    
-    _connLbl=[UILabel new];_connLbl.translatesAutoresizingMaskIntoConstraints=NO;
-    _connLbl.text=@"Connected";
-    _connLbl.font=[UIFont systemFontOfSize:11 weight:UIFontWeightBold];
-    _connLbl.textColor=ZXGreen;
-    _connLbl.textAlignment=NSTextAlignmentRight;
-    [sc addSubview:_connLbl];
     
     // Game Mode Switcher Button inside status card
     UIButton *modeBtn = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -1885,7 +1862,7 @@ static void ZXApplyModernButton(UIButton *btn) {
     _tv.translatesAutoresizingMaskIntoConstraints=NO;_tv.backgroundColor=UIColor.clearColor;
     _tv.separatorStyle=0;_tv.dataSource=self;_tv.delegate=self;[self.view addSubview:_tv];
     
-    // Bottom Tab Bar
+    // Bottom Tab Bar (Clean 3 option tabs)
     UIView*tabBar=[[UIView alloc]init];tabBar.translatesAutoresizingMaskIntoConstraints=NO;
     tabBar.backgroundColor=[UIColor colorWithRed:0.03 green:0.01 blue:0.02 alpha:0.95];
     tabBar.layer.borderWidth=0.8;tabBar.layer.borderColor=[UIColor colorWithWhite:1 alpha:.06].CGColor;
@@ -1897,11 +1874,11 @@ static void ZXApplyModernButton(UIButton *btn) {
     [tabBar addSubview:tabIndicator];
     
     NSMutableArray<UIButton*>*btns=[NSMutableArray array];
-    NSArray*tt=@[@"FF NORMAL",@"FF MAX",@"OPTION 3",@"EXTRA",@"👤 ACCOUNT"];
-    for(NSInteger i=0;i<5;i++){
+    NSArray*tt=@[@"OPTION 1",@"C++",@"EXTRA"];
+    for(NSInteger i=0;i<3;i++){
         UIButton*tb=[UIButton buttonWithType:UIButtonTypeSystem];tb.translatesAutoresizingMaskIntoConstraints=NO;
         [tb setTitle:tt[i] forState:0];
-        tb.titleLabel.font=[UIFont systemFontOfSize:9.5 weight:UIFontWeightBold];
+        tb.titleLabel.font=[UIFont systemFontOfSize:10.5 weight:UIFontWeightBold];
         tb.tintColor=(i==0?UIColor.whiteColor:[UIColor colorWithWhite:0.45 alpha:1.0]);
         [tb setTitleColor:(i==0?UIColor.whiteColor:[UIColor colorWithWhite:0.45 alpha:1.0]) forState:0];
         tb.tag=i;[tb addTarget:self action:@selector(tabTap:) forControlEvents:UIControlEventTouchUpInside];
@@ -1910,7 +1887,7 @@ static void ZXApplyModernButton(UIButton *btn) {
         [NSLayoutConstraint activateConstraints:@[
             [tb.topAnchor constraintEqualToAnchor:tabBar.topAnchor constant:6],
             [tb.bottomAnchor constraintEqualToAnchor:tabBar.safeAreaLayoutGuide.bottomAnchor constant:-4],
-            [tb.widthAnchor constraintEqualToAnchor:tabBar.widthAnchor multiplier:1.0/5],
+            [tb.widthAnchor constraintEqualToAnchor:tabBar.widthAnchor multiplier:1.0/3],
         ]];
         if(i==0)[tb.leadingAnchor constraintEqualToAnchor:tabBar.leadingAnchor].active=YES;
         else [tb.leadingAnchor constraintEqualToAnchor:((UIButton*)btns[i-1]).trailingAnchor].active=YES;
@@ -1922,11 +1899,7 @@ static void ZXApplyModernButton(UIButton *btn) {
         [brand.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:18],
         [brand.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor constant:8],
         
-        [settBtn.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-18],
-        [settBtn.centerYAnchor constraintEqualToAnchor:brand.centerYAnchor],
-        [settBtn.widthAnchor constraintEqualToConstant:34],[settBtn.heightAnchor constraintEqualToConstant:34],
-        
-        [channelBtn.trailingAnchor constraintEqualToAnchor:settBtn.leadingAnchor constant:-10],
+        [channelBtn.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-18],
         [channelBtn.centerYAnchor constraintEqualToAnchor:brand.centerYAnchor],
         [channelBtn.heightAnchor constraintEqualToConstant:28],
         
@@ -1945,12 +1918,6 @@ static void ZXApplyModernButton(UIButton *btn) {
         
         [stSub.leadingAnchor constraintEqualToAnchor:stHeader.leadingAnchor],
         [stSub.topAnchor constraintEqualToAnchor:stHeader.bottomAnchor constant:3],
-        
-        [_verLbl.trailingAnchor constraintEqualToAnchor:sc.trailingAnchor constant:-14],
-        [_verLbl.topAnchor constraintEqualToAnchor:sc.topAnchor constant:12],
-        
-        [_connLbl.trailingAnchor constraintEqualToAnchor:sc.trailingAnchor constant:-14],
-        [_connLbl.bottomAnchor constraintEqualToAnchor:sc.bottomAnchor constant:-12],
         
         [accentBar.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:18],
         [accentBar.topAnchor constraintEqualToAnchor:sc.bottomAnchor constant:16],
@@ -1972,7 +1939,7 @@ static void ZXApplyModernButton(UIButton *btn) {
         
         [tabIndicator.topAnchor constraintEqualToAnchor:tabBar.topAnchor],
         [tabIndicator.heightAnchor constraintEqualToConstant:2.5],
-        [tabIndicator.widthAnchor constraintEqualToAnchor:tabBar.widthAnchor multiplier:1.0/5],
+        [tabIndicator.widthAnchor constraintEqualToAnchor:tabBar.widthAnchor multiplier:1.0/3],
         [tabIndicator.leadingAnchor constraintEqualToAnchor:tabBar.leadingAnchor],
     ]];
 }
