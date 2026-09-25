@@ -211,7 +211,7 @@ static void ZXRedGlow(UIView*v,CGFloat r){
     return self;
 }
 -(void)configure:(ZXSlot*)s idx:(NSInteger)idx {
-    _num.text = [NSString stringWithFormat:@"#%02ld", (long)(idx+1)];
+    _num.text = [NSString stringWithFormat:@"%02ld", (long)(idx+1)];
     _name.text = s.name;
     _desc.text = s.desc;
     self.sw.on = NO;
@@ -823,15 +823,12 @@ static void ZXApplyModernButton(UIButton *btn) {
 }
 -(void)loadConfig{
     _connLbl.text=@"Connecting...";_connLbl.textColor=ZXGray;
-    _headerConn.text=@"Connecting...";_headerConn.textColor=ZXGray;
     [ZXConfig fetch:^(ZXConfig*c,NSError*e){
-        if(!c){self->_connLbl.text=@"Offline";self->_connLbl.textColor=UIColor.systemRedColor;
-            self->_headerConn.text=@"Offline";self->_headerConn.textColor=UIColor.systemRedColor;return;}
+        if(!c){self->_connLbl.text=@"Offline";self->_connLbl.textColor=UIColor.systemRedColor;return;}
         self->_cfg=c;
         self->_connLbl.text=@"Connected";self->_connLbl.textColor=ZXGreen;
-        self->_headerConn.text=@"Connected";self->_headerConn.textColor=ZXGreen;
-        self->_verLbl.text=[NSString stringWithFormat:@"v%@",c.version];
-        NSArray*tn=@[c.opt1Name?:@"AIM LOCK",c.opt2Name?:@"LOCATION",c.opt3Name?:@"MOD SKIN",c.opt4Name?:@"EXTRA"];
+        self->_verLbl.text=[NSString stringWithFormat:@"v%@",c.version?:@"2"];
+        NSArray*tn=@[c.opt1Name?:@"OPTION 1",c.opt2Name?:@"C++",c.opt3Name?:@"OPTION 3",c.opt4Name?:@"EXTRA"];
         for(NSInteger i=0;i<4&&i<(NSInteger)self->_tabBtns.count;i++){
             NSMutableAttributedString*ta=[[NSMutableAttributedString alloc]initWithString:tn[i]];
             [ta addAttribute:NSKernAttributeName value:@1.5 range:NSMakeRange(0,((NSString*)tn[i]).length)];
@@ -1136,24 +1133,19 @@ static void ZXApplyModernButton(UIButton *btn) {
 }
 -(void)switchTab:(NSInteger)idx{
     _tab=idx;[_tv reloadData];
+    UIView *indicator = [self.view viewWithTag:999];
+    if (indicator) {
+        [UIView animateWithDuration:0.25 animations:^{
+            indicator.transform = CGAffineTransformMakeTranslation(indicator.bounds.size.width * idx, 0);
+        }];
+    }
     for(NSInteger i=0;i<(NSInteger)_tabBtns.count;i++){
         UIButton*b=(UIButton*)_tabBtns[i];BOOL sel=(i==idx);
         if(sel){
-            b.backgroundColor=[UIColor colorWithRed:0.95 green:0.09 blue:0.27 alpha:0.35];
-            b.layer.borderColor=[UIColor colorWithRed:1.0 green:0.25 blue:0.4 alpha:0.85].CGColor;
-            b.layer.borderWidth=1.2;
-            b.layer.cornerRadius=14;
-            b.layer.shadowColor=[UIColor colorWithRed:1.0 green:0.1 blue:0.3 alpha:0.8].CGColor;
-            b.layer.shadowRadius=6;
-            b.layer.shadowOpacity=0.6;
             [b setTitleColor:UIColor.whiteColor forState:0];
             b.titleLabel.font=[UIFont systemFontOfSize:12 weight:UIFontWeightBold];
         } else {
-            b.backgroundColor=UIColor.clearColor;
-            b.layer.borderColor=UIColor.clearColor.CGColor;
-            b.layer.borderWidth=0;
-            b.layer.shadowOpacity=0;
-            [b setTitleColor:[UIColor colorWithWhite:0.6 alpha:1.0] forState:0];
+            [b setTitleColor:[UIColor colorWithWhite:0.45 alpha:1.0] forState:0];
             b.titleLabel.font=[UIFont systemFontOfSize:11 weight:UIFontWeightMedium];
         }
     }
@@ -1215,88 +1207,92 @@ static void ZXApplyModernButton(UIButton *btn) {
 // ── Build UI ──────────────────────────────────────────────────────
 -(void)buildUI{
     // Header
-    UILabel*subHead=[UILabel new];subHead.translatesAutoresizingMaskIntoConstraints=NO;
-    subHead.text=@"FF Normal";subHead.font=[UIFont systemFontOfSize:13 weight:UIFontWeightBold];
-    subHead.textColor=UIColor.whiteColor;subHead.textAlignment=NSTextAlignmentCenter;
-    [self.view addSubview:subHead];
-    
+-(void)buildUI{
+    // Brand header (Top-left: ZEX EXTERNAL)
     UILabel*brand=[UILabel new];brand.translatesAutoresizingMaskIntoConstraints=NO;
-    brand.text=@"ZEX EXTERNAL";
-    brand.font=[UIFont systemFontOfSize:26 weight:UIFontWeightBlack];
-    brand.textColor=UIColor.whiteColor;
+    NSMutableAttributedString*bAtt=[[NSMutableAttributedString alloc]initWithString:@"ZEX EXTERNAL"];
+    [bAtt addAttribute:NSForegroundColorAttributeName value:ZXRed range:NSMakeRange(0,3)];
+    [bAtt addAttribute:NSForegroundColorAttributeName value:UIColor.whiteColor range:NSMakeRange(3,9)];
+    [bAtt addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:22 weight:UIFontWeightBlack] range:NSMakeRange(0,12)];
+    [bAtt addAttribute:NSKernAttributeName value:@1.8 range:NSMakeRange(0,12)];
+    brand.attributedText=bAtt;
     [self.view addSubview:brand];
     
-    UILabel*subBrand=[UILabel new];subBrand.translatesAutoresizingMaskIntoConstraints=NO;
-    subBrand.text=@"PATCH CONTROL CENTER";
-    subBrand.font=[UIFont systemFontOfSize:11 weight:UIFontWeightBold];
-    subBrand.textColor=[UIColor colorWithRed:0.92 green:0.12 blue:0.22 alpha:1.0];
-    [self.view addSubview:subBrand];
+    // Channel button (Top-right green pill button: 📢 CHANNEL)
+    UIButton*channelBtn=[UIButton buttonWithType:UIButtonTypeSystem];channelBtn.translatesAutoresizingMaskIntoConstraints=NO;
+    [channelBtn setTitle:@"📣 CHANNEL" forState:0];
+    [channelBtn setTitleColor:[UIColor colorWithRed:0.25 green:0.88 blue:0.45 alpha:1.0] forState:0];
+    channelBtn.titleLabel.font=[UIFont systemFontOfSize:11 weight:UIFontWeightBold];
+    channelBtn.backgroundColor=[UIColor colorWithRed:0.04 green:0.22 blue:0.10 alpha:0.75];
+    channelBtn.layer.borderWidth=1.0;
+    channelBtn.layer.borderColor=[UIColor colorWithRed:0.2 green:0.85 blue:0.4 alpha:0.65].CGColor;
+    channelBtn.layer.cornerRadius=14;
+    channelBtn.contentEdgeInsets=UIEdgeInsetsMake(4, 10, 4, 10);
+    [channelBtn addTarget:self action:@selector(openTG) forControlEvents:UIControlEventTouchUpInside];
+    [self.view addSubview:channelBtn];
     
-    UIButton*settBtn=[UIButton buttonWithType:UIButtonTypeCustom];settBtn.translatesAutoresizingMaskIntoConstraints=NO;
-    settBtn.backgroundColor=[UIColor colorWithRed:0.90 green:0.18 blue:0.24 alpha:1.0];
-    settBtn.layer.cornerRadius=21;settBtn.clipsToBounds=YES;
-    [settBtn setImage:[UIImage systemImageNamed:@"gearshape.fill"] forState:0];
-    settBtn.tintColor=UIColor.whiteColor;
+    // Settings dots button (Top-right circular dark button: ⋮)
+    UIButton*settBtn=[UIButton buttonWithType:UIButtonTypeSystem];settBtn.translatesAutoresizingMaskIntoConstraints=NO;
+    settBtn.backgroundColor=[UIColor colorWithWhite:1.0 alpha:0.08];
+    settBtn.layer.cornerRadius=17;settBtn.layer.borderWidth=0.8;
+    settBtn.layer.borderColor=[UIColor colorWithWhite:1.0 alpha:0.15].CGColor;
+    [settBtn setTitle:@"⋮" forState:0];
+    [settBtn setTitleColor:UIColor.whiteColor forState:0];
+    settBtn.titleLabel.font=[UIFont systemFontOfSize:18 weight:UIFontWeightBold];
     [settBtn addTarget:self action:@selector(showSettingsInfo) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:settBtn];
     
-    // Status card (DEVICE STATUS)
+    // Status Card (SYSTEM READY / All systems operational)
     UIView*sc=[UIView new];sc.translatesAutoresizingMaskIntoConstraints=NO;
-    sc.backgroundColor=[UIColor colorWithRed:0.07 green:0.09 blue:0.12 alpha:0.95];
-    sc.layer.cornerRadius=20;sc.layer.borderWidth=1.0;
-    sc.layer.borderColor=[UIColor colorWithWhite:1 alpha:0.08].CGColor;
+    sc.backgroundColor=[UIColor colorWithRed:0.06 green:0.02 blue:0.035 alpha:0.88];
+    sc.layer.cornerRadius=18;sc.layer.borderWidth=1.0;
+    sc.layer.borderColor=[UIColor colorWithRed:0.95 green:0.12 blue:0.28 alpha:0.4].CGColor;
     [self.view addSubview:sc];
     
+    UIImageView*shieldIcon=[UIImageView new];shieldIcon.translatesAutoresizingMaskIntoConstraints=NO;
+    shieldIcon.tintColor=ZXRed;
+    shieldIcon.contentMode=UIViewContentModeScaleAspectFit;
+    shieldIcon.image=[UIImage systemImageNamed:@"shield.fill"];
+    [sc addSubview:shieldIcon];
+    
     UILabel*stHeader=[UILabel new];stHeader.translatesAutoresizingMaskIntoConstraints=NO;
-    stHeader.text=@"🛡️  DEVICE STATUS";
-    stHeader.font=[UIFont systemFontOfSize:12 weight:UIFontWeightBlack];
-    stHeader.textColor=[UIColor colorWithRed:0.92 green:0.12 blue:0.22 alpha:1.0];
+    stHeader.text=@"SYSTEM READY";
+    stHeader.font=[UIFont systemFontOfSize:14 weight:UIFontWeightBlack];
+    stHeader.textColor=UIColor.whiteColor;
     [sc addSubview:stHeader];
     
-    // Row 1: iOS
-    UILabel*r1Icon=[UILabel new];r1Icon.translatesAutoresizingMaskIntoConstraints=NO;
-    r1Icon.text=@"🍏  iOS";r1Icon.font=[UIFont systemFontOfSize:13 weight:UIFontWeightMedium];
-    r1Icon.textColor=[UIColor colorWithWhite:0.75 alpha:1.0];[sc addSubview:r1Icon];
+    UILabel*stSub=[UILabel new];stSub.translatesAutoresizingMaskIntoConstraints=NO;
+    stSub.text=@"All systems operational";
+    stSub.font=[UIFont systemFontOfSize:11 weight:UIFontWeightMedium];
+    stSub.textColor=[UIColor colorWithWhite:0.55 alpha:1.0];
+    [sc addSubview:stSub];
     
-    UILabel*r1Val=[UILabel new];r1Val.translatesAutoresizingMaskIntoConstraints=NO;
-    r1Val.text=[UIDevice currentDevice].systemVersion ?: @"18.6.0";
-    r1Val.font=[UIFont systemFontOfSize:14 weight:UIFontWeightBold];
-    r1Val.textColor=UIColor.whiteColor;r1Val.textAlignment=NSTextAlignmentRight;[sc addSubview:r1Val];
+    _verLbl=[UILabel new];_verLbl.translatesAutoresizingMaskIntoConstraints=NO;
+    _verLbl.text=@"v2";
+    _verLbl.font=[UIFont monospacedSystemFontOfSize:11 weight:UIFontWeightBold];
+    _verLbl.textColor=ZXRed;
+    _verLbl.textAlignment=NSTextAlignmentRight;
+    [sc addSubview:_verLbl];
     
-    // Row 2: Device
-    UILabel*r2Icon=[UILabel new];r2Icon.translatesAutoresizingMaskIntoConstraints=NO;
-    r2Icon.text=@"📱  Device";r2Icon.font=[UIFont systemFontOfSize:13 weight:UIFontWeightMedium];
-    r2Icon.textColor=[UIColor colorWithWhite:0.75 alpha:1.0];[sc addSubview:r2Icon];
+    _connLbl=[UILabel new];_connLbl.translatesAutoresizingMaskIntoConstraints=NO;
+    _connLbl.text=@"Connected";
+    _connLbl.font=[UIFont systemFontOfSize:11 weight:UIFontWeightBold];
+    _connLbl.textColor=ZXGreen;
+    _connLbl.textAlignment=NSTextAlignmentRight;
+    [sc addSubview:_connLbl];
     
-    NSString *hw = ZXGetHWID();
-    NSString *devStr = hw.length > 10 ? [NSString stringWithFormat:@"iPhone13,%@", [hw substringToIndex:1]] : @"iPhone13,1";
-    UILabel*r2Val=[UILabel new];r2Val.translatesAutoresizingMaskIntoConstraints=NO;
-    r2Val.text=devStr;r2Val.font=[UIFont systemFontOfSize:14 weight:UIFontWeightBold];
-    r2Val.textColor=UIColor.whiteColor;r2Val.textAlignment=NSTextAlignmentRight;[sc addSubview:r2Val];
+    // Section Header (| INJECTION SLOTS)
+    UIView*accentBar=[UIView new];accentBar.translatesAutoresizingMaskIntoConstraints=NO;
+    accentBar.backgroundColor=ZXRed;accentBar.layer.cornerRadius=1.5;
+    [self.view addSubview:accentBar];
     
-    // Row 3: Support
-    UILabel*r3Icon=[UILabel new];r3Icon.translatesAutoresizingMaskIntoConstraints=NO;
-    r3Icon.text=@"🟢  Support";r3Icon.font=[UIFont systemFontOfSize:13 weight:UIFontWeightMedium];
-    r3Icon.textColor=[UIColor colorWithWhite:0.75 alpha:1.0];[sc addSubview:r3Icon];
-    
-    UILabel*r3Val=[UILabel new];r3Val.translatesAutoresizingMaskIntoConstraints=NO;
-    r3Val.text=@"SUPPORTED";r3Val.font=[UIFont systemFontOfSize:14 weight:UIFontWeightBlack];
-    r3Val.textColor=[UIColor colorWithRed:0.00 green:0.90 blue:0.45 alpha:1.0];
-    r3Val.textAlignment=NSTextAlignmentRight;[sc addSubview:r3Val];
-    
-    // Patch options header
     UILabel*poLeft=[UILabel new];poLeft.translatesAutoresizingMaskIntoConstraints=NO;
-    poLeft.text=@"⚡  PATCH OPTIONS";
-    poLeft.font=[UIFont systemFontOfSize:12 weight:UIFontWeightBlack];
-    poLeft.textColor=[UIColor colorWithRed:0.92 green:0.12 blue:0.22 alpha:1.0];
+    NSMutableAttributedString*pAtt=[[NSMutableAttributedString alloc]initWithString:@"INJECTION SLOTS"];
+    [pAtt addAttribute:NSKernAttributeName value:@1.5 range:NSMakeRange(0, 15)];
+    [pAtt addAttribute:NSForegroundColorAttributeName value:UIColor.whiteColor range:NSMakeRange(0, 15)];
+    [pAtt addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:12 weight:UIFontWeightBlack] range:NSMakeRange(0, 15)];
+    poLeft.attributedText=pAtt;
     [self.view addSubview:poLeft];
-    
-    UILabel*poRight=[UILabel new];poRight.translatesAutoresizingMaskIntoConstraints=NO;
-    poRight.text=@"SELECT TO ENABLE";
-    poRight.font=[UIFont systemFontOfSize:10 weight:UIFontWeightBold];
-    poRight.textColor=[UIColor colorWithWhite:0.45 alpha:1.0];
-    poRight.textAlignment=NSTextAlignmentRight;
-    [self.view addSubview:poRight];
     
     // TableView / Slots Grid
     _tv=[[UITableView alloc]initWithFrame:CGRectZero style:UITableViewStylePlain];
@@ -1305,20 +1301,23 @@ static void ZXApplyModernButton(UIButton *btn) {
     
     // Bottom Tab Bar
     UIView*tabBar=[[UIView alloc]init];tabBar.translatesAutoresizingMaskIntoConstraints=NO;
-    tabBar.backgroundColor=[UIColor colorWithRed:0.05 green:0.06 blue:0.08 alpha:0.98];
+    tabBar.backgroundColor=[UIColor colorWithRed:0.03 green:0.01 blue:0.02 alpha:0.95];
     tabBar.layer.borderWidth=0.8;tabBar.layer.borderColor=[UIColor colorWithWhite:1 alpha:.06].CGColor;
     [self.view addSubview:tabBar];
     
+    UIView*tabIndicator=[UIView new];tabIndicator.translatesAutoresizingMaskIntoConstraints=NO;
+    tabIndicator.backgroundColor=ZXRed;tabIndicator.tag=999;
+    tabIndicator.layer.cornerRadius=1.0;
+    [tabBar addSubview:tabIndicator];
+    
     NSMutableArray<UIButton*>*btns=[NSMutableArray array];
-    NSArray*tt=@[@"FF Normal",@"FF Max",@"File Status",@"Developer"];
-    NSArray*icons=@[@"target",@"flame.fill",@"doc.fill",@"person.fill"];
+    NSArray*tt=@[@"OPTION 1",@"C++",@"OPTION 3",@"EXTRA"];
     for(NSInteger i=0;i<4;i++){
         UIButton*tb=[UIButton buttonWithType:UIButtonTypeSystem];tb.translatesAutoresizingMaskIntoConstraints=NO;
-        [tb setImage:[UIImage systemImageNamed:icons[i]] forState:0];
         [tb setTitle:tt[i] forState:0];
-        tb.titleLabel.font=[UIFont systemFontOfSize:10 weight:UIFontWeightBold];
-        tb.tintColor=(i==0?[UIColor colorWithRed:0.92 green:0.12 blue:0.22 alpha:1.0]:[UIColor colorWithWhite:0.45 alpha:1.0]);
-        [tb setTitleColor:(i==0?[UIColor colorWithRed:0.92 green:0.12 blue:0.22 alpha:1.0]:[UIColor colorWithWhite:0.45 alpha:1.0]) forState:0];
+        tb.titleLabel.font=[UIFont systemFontOfSize:11 weight:UIFontWeightBold];
+        tb.tintColor=(i==0?UIColor.whiteColor:[UIColor colorWithWhite:0.45 alpha:1.0]);
+        [tb setTitleColor:(i==0?UIColor.whiteColor:[UIColor colorWithWhite:0.45 alpha:1.0]) forState:0];
         tb.tag=i;[tb addTarget:self action:@selector(tabTap:) forControlEvents:UIControlEventTouchUpInside];
         [tabBar addSubview:tb];[btns addObject:tb];
         
@@ -1334,48 +1333,48 @@ static void ZXApplyModernButton(UIButton *btn) {
     
     // Constraints
     [NSLayoutConstraint activateConstraints:@[
-        [subHead.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor constant:4],
-        [subHead.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
-        
         [brand.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:18],
-        [brand.topAnchor constraintEqualToAnchor:subHead.bottomAnchor constant:10],
-        
-        [subBrand.leadingAnchor constraintEqualToAnchor:brand.leadingAnchor],
-        [subBrand.topAnchor constraintEqualToAnchor:brand.bottomAnchor constant:2],
+        [brand.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor constant:8],
         
         [settBtn.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-18],
         [settBtn.centerYAnchor constraintEqualToAnchor:brand.centerYAnchor],
-        [settBtn.widthAnchor constraintEqualToConstant:42],[settBtn.heightAnchor constraintEqualToConstant:42],
+        [settBtn.widthAnchor constraintEqualToConstant:34],[settBtn.heightAnchor constraintEqualToConstant:34],
         
-        [sc.topAnchor constraintEqualToAnchor:subBrand.bottomAnchor constant:14],
+        [channelBtn.trailingAnchor constraintEqualToAnchor:settBtn.leadingAnchor constant:-10],
+        [channelBtn.centerYAnchor constraintEqualToAnchor:brand.centerYAnchor],
+        [channelBtn.heightAnchor constraintEqualToConstant:28],
+        
+        [sc.topAnchor constraintEqualToAnchor:brand.bottomAnchor constant:14],
         [sc.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:16],
         [sc.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-16],
+        [sc.heightAnchor constraintEqualToConstant:62],
         
-        [stHeader.topAnchor constraintEqualToAnchor:sc.topAnchor constant:14],
-        [stHeader.leadingAnchor constraintEqualToAnchor:sc.leadingAnchor constant:16],
+        [shieldIcon.leadingAnchor constraintEqualToAnchor:sc.leadingAnchor constant:14],
+        [shieldIcon.centerYAnchor constraintEqualToAnchor:sc.centerYAnchor],
+        [shieldIcon.widthAnchor constraintEqualToConstant:24],
+        [shieldIcon.heightAnchor constraintEqualToConstant:24],
         
-        [r1Icon.topAnchor constraintEqualToAnchor:stHeader.bottomAnchor constant:12],
-        [r1Icon.leadingAnchor constraintEqualToAnchor:sc.leadingAnchor constant:16],
-        [r1Val.centerYAnchor constraintEqualToAnchor:r1Icon.centerYAnchor],
-        [r1Val.trailingAnchor constraintEqualToAnchor:sc.trailingAnchor constant:-16],
+        [stHeader.leadingAnchor constraintEqualToAnchor:shieldIcon.trailingAnchor constant:12],
+        [stHeader.topAnchor constraintEqualToAnchor:sc.topAnchor constant:12],
         
-        [r2Icon.topAnchor constraintEqualToAnchor:r1Icon.bottomAnchor constant:8],
-        [r2Icon.leadingAnchor constraintEqualToAnchor:sc.leadingAnchor constant:16],
-        [r2Val.centerYAnchor constraintEqualToAnchor:r2Icon.centerYAnchor],
-        [r2Val.trailingAnchor constraintEqualToAnchor:sc.trailingAnchor constant:-16],
+        [stSub.leadingAnchor constraintEqualToAnchor:stHeader.leadingAnchor],
+        [stSub.topAnchor constraintEqualToAnchor:stHeader.bottomAnchor constant:3],
         
-        [r3Icon.topAnchor constraintEqualToAnchor:r2Icon.bottomAnchor constant:8],
-        [r3Icon.leadingAnchor constraintEqualToAnchor:sc.leadingAnchor constant:16],
-        [r3Icon.bottomAnchor constraintEqualToAnchor:sc.bottomAnchor constant:-14],
-        [r3Val.centerYAnchor constraintEqualToAnchor:r3Icon.centerYAnchor],
-        [r3Val.trailingAnchor constraintEqualToAnchor:sc.trailingAnchor constant:-16],
+        [_verLbl.trailingAnchor constraintEqualToAnchor:sc.trailingAnchor constant:-14],
+        [_verLbl.topAnchor constraintEqualToAnchor:sc.topAnchor constant:12],
         
-        [poLeft.topAnchor constraintEqualToAnchor:sc.bottomAnchor constant:16],
-        [poLeft.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:18],
-        [poRight.centerYAnchor constraintEqualToAnchor:poLeft.centerYAnchor],
-        [poRight.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-18],
+        [_connLbl.trailingAnchor constraintEqualToAnchor:sc.trailingAnchor constant:-14],
+        [_connLbl.bottomAnchor constraintEqualToAnchor:sc.bottomAnchor constant:-12],
         
-        [_tv.topAnchor constraintEqualToAnchor:poLeft.bottomAnchor constant:10],
+        [accentBar.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:18],
+        [accentBar.topAnchor constraintEqualToAnchor:sc.bottomAnchor constant:16],
+        [accentBar.widthAnchor constraintEqualToConstant:3],
+        [accentBar.heightAnchor constraintEqualToConstant:14],
+        
+        [poLeft.leadingAnchor constraintEqualToAnchor:accentBar.trailingAnchor constant:8],
+        [poLeft.centerYAnchor constraintEqualToAnchor:accentBar.centerYAnchor],
+        
+        [_tv.topAnchor constraintEqualToAnchor:accentBar.bottomAnchor constant:10],
         [_tv.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:14],
         [_tv.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-14],
         [_tv.bottomAnchor constraintEqualToAnchor:tabBar.topAnchor constant:-4],
@@ -1384,6 +1383,11 @@ static void ZXApplyModernButton(UIButton *btn) {
         [tabBar.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
         [tabBar.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
         [tabBar.heightAnchor constraintEqualToConstant:75],
+        
+        [tabIndicator.topAnchor constraintEqualToAnchor:tabBar.topAnchor],
+        [tabIndicator.heightAnchor constraintEqualToConstant:2.5],
+        [tabIndicator.widthAnchor constraintEqualToAnchor:tabBar.widthAnchor multiplier:1.0/4],
+        [tabIndicator.leadingAnchor constraintEqualToAnchor:tabBar.leadingAnchor],
     ]];
 }
 @end
