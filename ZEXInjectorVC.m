@@ -809,12 +809,15 @@ static void ZXApplyModernButton(UIButton *btn) {
 
 // ── ZXMainVC ──────────────────────────────────────────────────────
 @interface ZXMainVC : UIViewController<UITableViewDataSource,UITableViewDelegate>
+@property (nonatomic, strong) NSString *selectedGameMode;
 @end
 @implementation ZXMainVC{
     ZXConfig*_cfg;NSInteger _tab;
     UILabel*_connLbl,*_verLbl,*_headerConn;
     UITableView*_tv;
     NSArray<UIButton*>*_tabBtns;
+    UIView *_modeOverlay;
+    UILabel *_modeBadgeLbl;
 }
 -(UIStatusBarStyle)preferredStatusBarStyle{return UIStatusBarStyleLightContent;}
 -(NSArray<ZXSlot*>*)currentSlots{
@@ -828,7 +831,167 @@ static void ZXApplyModernButton(UIButton *btn) {
 }
 -(void)viewDidLoad{
     [super viewDidLoad];_tab=0;self.view.backgroundColor=ZXBg;
+    if(!self.selectedGameMode) self.selectedGameMode = @"FFTH";
     [self buildBackground];[self buildUI];[self loadConfig];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.15 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [self showGameModeSelection];
+    });
+}
+-(void)showGameModeSelection{
+    if (_modeOverlay && _modeOverlay.superview) return;
+    
+    UIView *overlay = [[UIView alloc] initWithFrame:self.view.bounds];
+    overlay.backgroundColor = [UIColor colorWithRed:0.02 green:0.01 blue:0.03 alpha:0.92];
+    overlay.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    _modeOverlay = overlay;
+    
+    UIView *card = ZXGlassView(22);
+    card.translatesAutoresizingMaskIntoConstraints = NO;
+    card.backgroundColor = [UIColor colorWithRed:0.07 green:0.02 blue:0.04 alpha:0.95];
+    card.layer.borderColor = [UIColor colorWithRed:0.95 green:0.12 blue:0.28 alpha:0.5].CGColor;
+    card.layer.borderWidth = 1.2;
+    ZXRedGlow(card, 16);
+    [overlay addSubview:card];
+    
+    UIImageView *gameIcon = [UIImageView new];
+    gameIcon.translatesAutoresizingMaskIntoConstraints = NO;
+    gameIcon.image = [UIImage systemImageNamed:@"gamecontroller.fill"];
+    gameIcon.tintColor = ZXRed;
+    gameIcon.contentMode = UIViewContentModeScaleAspectFit;
+    [card addSubview:gameIcon];
+    
+    UILabel *titleLbl = [UILabel new];
+    titleLbl.translatesAutoresizingMaskIntoConstraints = NO;
+    titleLbl.text = @"SELECT GAME EDITION";
+    titleLbl.font = [UIFont systemFontOfSize:17 weight:UIFontWeightBlack];
+    titleLbl.textColor = UIColor.whiteColor;
+    titleLbl.textAlignment = NSTextAlignmentCenter;
+    [card addSubview:titleLbl];
+    
+    UILabel *subLbl = [UILabel new];
+    subLbl.translatesAutoresizingMaskIntoConstraints = NO;
+    subLbl.text = @"Select your game version to apply injection paths:";
+    subLbl.font = [UIFont systemFontOfSize:11 weight:UIFontWeightMedium];
+    subLbl.textColor = [UIColor colorWithWhite:0.65 alpha:1.0];
+    subLbl.numberOfLines = 2;
+    subLbl.textAlignment = NSTextAlignmentCenter;
+    [card addSubview:subLbl];
+    
+    UIButton *btnNormal = [UIButton buttonWithType:UIButtonTypeCustom];
+    btnNormal.translatesAutoresizingMaskIntoConstraints = NO;
+    btnNormal.backgroundColor = [UIColor colorWithRed:0.12 green:0.04 blue:0.06 alpha:0.9];
+    btnNormal.layer.cornerRadius = 14;
+    btnNormal.layer.borderWidth = 1.0;
+    btnNormal.layer.borderColor = [UIColor colorWithRed:0.95 green:0.12 blue:0.28 alpha:0.6].CGColor;
+    
+    UILabel *lblNormalTitle = [UILabel new];
+    lblNormalTitle.translatesAutoresizingMaskIntoConstraints = NO;
+    lblNormalTitle.text = @"⚡ FREE FIRE NORMAL";
+    lblNormalTitle.font = [UIFont systemFontOfSize:14 weight:UIFontWeightBlack];
+    lblNormalTitle.textColor = UIColor.whiteColor;
+    [btnNormal addSubview:lblNormalTitle];
+    
+    UILabel *lblNormalSub = [UILabel new];
+    lblNormalSub.translatesAutoresizingMaskIntoConstraints = NO;
+    lblNormalSub.text = @"Standard Free Fire (TH) Edition";
+    lblNormalSub.font = [UIFont systemFontOfSize:10 weight:UIFontWeightMedium];
+    lblNormalSub.textColor = [UIColor colorWithRed:0.25 green:0.88 blue:0.45 alpha:0.95];
+    [btnNormal addSubview:lblNormalSub];
+    
+    btnNormal.tag = 100;
+    [btnNormal addTarget:self action:@selector(selectGameModeTap:) forControlEvents:UIControlEventTouchUpInside];
+    [card addSubview:btnNormal];
+    
+    UIButton *btnMax = [UIButton buttonWithType:UIButtonTypeCustom];
+    btnMax.translatesAutoresizingMaskIntoConstraints = NO;
+    btnMax.backgroundColor = [UIColor colorWithRed:0.12 green:0.04 blue:0.06 alpha:0.9];
+    btnMax.layer.cornerRadius = 14;
+    btnMax.layer.borderWidth = 1.0;
+    btnMax.layer.borderColor = [UIColor colorWithRed:0.95 green:0.12 blue:0.28 alpha:0.6].CGColor;
+    
+    UILabel *lblMaxTitle = [UILabel new];
+    lblMaxTitle.translatesAutoresizingMaskIntoConstraints = NO;
+    lblMaxTitle.text = @"🔥 FREE FIRE MAX";
+    lblMaxTitle.font = [UIFont systemFontOfSize:14 weight:UIFontWeightBlack];
+    lblMaxTitle.textColor = UIColor.whiteColor;
+    [btnMax addSubview:lblMaxTitle];
+    
+    UILabel *lblMaxSub = [UILabel new];
+    lblMaxSub.translatesAutoresizingMaskIntoConstraints = NO;
+    lblMaxSub.text = @"High-Graphics Free Fire MAX Edition";
+    lblMaxSub.font = [UIFont systemFontOfSize:10 weight:UIFontWeightMedium];
+    lblMaxSub.textColor = [UIColor colorWithRed:1.0 green:0.75 blue:0.2 alpha:0.95];
+    [btnMax addSubview:lblMaxSub];
+    
+    btnMax.tag = 200;
+    [btnMax addTarget:self action:@selector(selectGameModeTap:) forControlEvents:UIControlEventTouchUpInside];
+    [card addSubview:btnMax];
+    
+    [NSLayoutConstraint activateConstraints:@[
+        [card.centerXAnchor constraintEqualToAnchor:overlay.centerXAnchor],
+        [card.centerYAnchor constraintEqualToAnchor:overlay.centerYAnchor],
+        [card.widthAnchor constraintEqualToAnchor:overlay.widthAnchor multiplier:0.86],
+        
+        [gameIcon.topAnchor constraintEqualToAnchor:card.topAnchor constant:20],
+        [gameIcon.centerXAnchor constraintEqualToAnchor:card.centerXAnchor],
+        [gameIcon.widthAnchor constraintEqualToConstant:36],
+        [gameIcon.heightAnchor constraintEqualToConstant:36],
+        
+        [titleLbl.topAnchor constraintEqualToAnchor:gameIcon.bottomAnchor constant:10],
+        [titleLbl.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:14],
+        [titleLbl.trailingAnchor constraintEqualToAnchor:card.trailingAnchor constant:-14],
+        
+        [subLbl.topAnchor constraintEqualToAnchor:titleLbl.bottomAnchor constant:6],
+        [subLbl.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:16],
+        [subLbl.trailingAnchor constraintEqualToAnchor:card.trailingAnchor constant:-16],
+        
+        [btnNormal.topAnchor constraintEqualToAnchor:subLbl.bottomAnchor constant:18],
+        [btnNormal.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:16],
+        [btnNormal.trailingAnchor constraintEqualToAnchor:card.trailingAnchor constant:-16],
+        [btnNormal.heightAnchor constraintEqualToConstant:54],
+        
+        [lblNormalTitle.topAnchor constraintEqualToAnchor:btnNormal.topAnchor constant:10],
+        [lblNormalTitle.centerXAnchor constraintEqualToAnchor:btnNormal.centerXAnchor],
+        [lblNormalSub.topAnchor constraintEqualToAnchor:lblNormalTitle.bottomAnchor constant:3],
+        [lblNormalSub.centerXAnchor constraintEqualToAnchor:btnNormal.centerXAnchor],
+        
+        [btnMax.topAnchor constraintEqualToAnchor:btnNormal.bottomAnchor constant:12],
+        [btnMax.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:16],
+        [btnMax.trailingAnchor constraintEqualToAnchor:card.trailingAnchor constant:-16],
+        [btnMax.heightAnchor constraintEqualToConstant:54],
+        [btnMax.bottomAnchor constraintEqualToAnchor:card.bottomAnchor constant:-20],
+        
+        [lblMaxTitle.topAnchor constraintEqualToAnchor:btnMax.topAnchor constant:10],
+        [lblMaxTitle.centerXAnchor constraintEqualToAnchor:btnMax.centerXAnchor],
+        [lblMaxSub.topAnchor constraintEqualToAnchor:lblMaxTitle.bottomAnchor constant:3],
+        [lblMaxSub.centerXAnchor constraintEqualToAnchor:btnMax.centerXAnchor],
+    ]];
+    
+    overlay.alpha = 0;
+    [self.view addSubview:overlay];
+    [UIView animateWithDuration:0.3 animations:^{
+        overlay.alpha = 1.0;
+    }];
+}
+-(void)selectGameModeTap:(UIButton*)btn{
+    if (btn.tag == 100) {
+        self.selectedGameMode = @"FFTH";
+        _modeBadgeLbl.text = @"⚡ FF NORMAL";
+        _modeBadgeLbl.textColor = [UIColor colorWithRed:0.25 green:0.88 blue:0.45 alpha:1.0];
+    } else {
+        self.selectedGameMode = @"FFMAX";
+        _modeBadgeLbl.text = @"🔥 FF MAX";
+        _modeBadgeLbl.textColor = [UIColor colorWithRed:1.0 green:0.75 blue:0.2 alpha:1.0];
+    }
+    
+    if (_modeOverlay) {
+        [UIView animateWithDuration:0.25 animations:^{
+            self->_modeOverlay.alpha = 0;
+        } completion:^(BOOL finished) {
+            [self->_modeOverlay removeFromSuperview];
+            self->_modeOverlay = nil;
+        }];
+    }
 }
 -(void)buildBackground{
     ZXAddModernBackground(self.view);
@@ -1010,9 +1173,14 @@ static void ZXApplyModernButton(UIButton *btn) {
 -(void)showPopup:(NSString*)name{
     UIWindow*win=[UIApplication sharedApplication].keyWindow;
     if(!win) win=[UIApplication sharedApplication].windows.firstObject;
-    CGFloat w=180,h=50;
-    CGFloat startX=(win.bounds.size.width-w)/2.0;
-    UIView*p=ZXGlassView(13);p.frame=CGRectMake(startX,-h,w,h);
+    CGFloat screenW = [UIScreen mainScreen].bounds.size.width;
+    if (screenW <= 0) screenW = self.view.bounds.size.width;
+    if (screenW <= 0) screenW = 375;
+    
+    CGFloat w=210,h=50;
+    CGFloat startX=(screenW-w)/2.0;
+    UIView*p=ZXGlassView(13);
+    p.frame=CGRectMake(startX,-h,w,h);
     p.backgroundColor=[UIColor colorWithRed:.06 green:.02 blue:.035 alpha:.95];
     p.layer.borderColor=ZXRed.CGColor;ZXRedGlow(p,8);
     
@@ -1027,13 +1195,18 @@ static void ZXApplyModernButton(UIButton *btn) {
     [as addAttribute:NSKernAttributeName value:@1.2 range:NSMakeRange(0,as.length)];
     a.attributedText=as;a.textAlignment=NSTextAlignmentCenter;[p addSubview:a];
     [win addSubview:p];
+    p.center = CGPointMake(screenW / 2.0, -h / 2.0);
     
     [UIView animateWithDuration:.35 delay:0 usingSpringWithDamping:.8 initialSpringVelocity:.5
-        options:0 animations:^{p.frame=CGRectMake(startX,54,w,h);}
+        options:0 animations:^{
+            p.center = CGPointMake(screenW / 2.0, 60);
+        }
         completion:^(BOOL f){
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW,2200*NSEC_PER_MSEC),dispatch_get_main_queue(),^{
-                [UIView animateWithDuration:.25 animations:^{p.frame=CGRectMake(startX,-h,w,h);p.alpha=0;}
-                    completion:^(BOOL ff){[p removeFromSuperview];}];
+                [UIView animateWithDuration:.25 animations:^{
+                    p.center = CGPointMake(screenW / 2.0, -h / 2.0);
+                    p.alpha=0;
+                } completion:^(BOOL ff){[p removeFromSuperview];}];
             });
         }];
 }
@@ -1050,25 +1223,23 @@ static void ZXApplyModernButton(UIButton *btn) {
             if(!on)return;
             ZXPlay(@"activate");
             __strong ZXMainVC*svc=ws;if(!svc)return;
-            BOOL hasTH=s2.ffthPath.length>0,hasMAX=s2.ffmaxPath.length>0;
             NSString*base=[svc mcmBase];NSInteger opt=3;
             void(^inject)(NSString*)=^(NSString*p){
                 [[NSFileManager defaultManager]createDirectoryAtPath:p withIntermediateDirectories:YES attributes:nil error:nil];
                 [svc doInjectPhoto:s2 dir:p optNum:opt ip:cIP];
             };
-            if(hasTH&&hasMAX){
-                UIAlertController*ac=[UIAlertController alertControllerWithTitle:s2.name message:@"Select game:" preferredStyle:UIAlertControllerStyleActionSheet];
-                [ac addAction:[UIAlertAction actionWithTitle:@"Free Fire TH" style:0 handler:^(UIAlertAction*a){inject([base stringByAppendingPathComponent:s2.ffthPath]);}]];
-                [ac addAction:[UIAlertAction actionWithTitle:@"Free Fire MAX" style:0 handler:^(UIAlertAction*a){inject([base stringByAppendingPathComponent:s2.ffmaxPath]);}]];
-                [ac addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:^(UIAlertAction*a){
-                    ZXPhotoCell*c2=(ZXPhotoCell*)[svc->_tv cellForRowAtIndexPath:cIP];c2.sw.on=NO;
-                }]];
-                UIViewController*top=[UIApplication sharedApplication].keyWindow.rootViewController;
-                while(top.presentedViewController)top=top.presentedViewController;
-                [top presentViewController:ac animated:YES completion:nil];
-            } else if(hasTH){inject([base stringByAppendingPathComponent:s2.ffthPath]);}
-            else if(hasMAX){inject([base stringByAppendingPathComponent:s2.ffmaxPath]);}
-            else{ZXPhotoCell*c2=(ZXPhotoCell*)[svc->_tv cellForRowAtIndexPath:cIP];c2.sw.on=NO;[c2 setStatus:@"Set FFTH/FFMAX path in bot" color:UIColor.systemOrangeColor];}
+            NSString *relPath = @"";
+            if ([svc.selectedGameMode isEqualToString:@"FFMAX"]) {
+                relPath = s2.ffmaxPath.length ? s2.ffmaxPath : (s2.ffthPath.length ? s2.ffthPath : s2.subPath);
+            } else {
+                relPath = s2.ffthPath.length ? s2.ffthPath : (s2.ffmaxPath.length ? s2.ffmaxPath : s2.subPath);
+            }
+            if (relPath.length > 0) {
+                inject([base stringByAppendingPathComponent:relPath]);
+            } else {
+                ZXPhotoCell*c2=(ZXPhotoCell*)[svc->_tv cellForRowAtIndexPath:cIP];c2.sw.on=NO;
+                [c2 setStatus:@"Set FFTH/FFMAX path in bot" color:UIColor.systemOrangeColor];
+            }
         };
         return cell;
     }
@@ -1087,25 +1258,20 @@ static void ZXApplyModernButton(UIButton *btn) {
         } else {
             ZXPlay(@"activate");
         }
-        BOOL hasTH=s2.ffthPath.length>0,hasMAX=s2.ffmaxPath.length>0;
         NSString*base=[svc mcmBase];NSInteger opt=svc->_tab+1;
         void(^inject)(NSString*)=^(NSString*p){
             [[NSFileManager defaultManager]createDirectoryAtPath:p withIntermediateDirectories:YES attributes:nil error:nil];
             [svc doInject:s2 dir:p optNum:opt ip:cIP];
         };
-        if(hasTH&&hasMAX){
-            UIAlertController*ac=[UIAlertController alertControllerWithTitle:s2.name message:@"Select game:" preferredStyle:UIAlertControllerStyleActionSheet];
-            [ac addAction:[UIAlertAction actionWithTitle:@"Free Fire TH" style:0 handler:^(UIAlertAction*a){inject([base stringByAppendingPathComponent:s2.ffthPath]);}]];
-            [ac addAction:[UIAlertAction actionWithTitle:@"Free Fire MAX" style:0 handler:^(UIAlertAction*a){inject([base stringByAppendingPathComponent:s2.ffmaxPath]);}]];
-            [ac addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:^(UIAlertAction*a){
-                ZXSlotCell*c2=(ZXSlotCell*)[svc->_tv cellForRowAtIndexPath:cIP];c2.sw.on=NO;
-            }]];
-            UIViewController*top=[UIApplication sharedApplication].keyWindow.rootViewController;
-            while(top.presentedViewController)top=top.presentedViewController;
-            [top presentViewController:ac animated:YES completion:nil];
-        } else if(hasTH){inject([base stringByAppendingPathComponent:s2.ffthPath]);}
-        else if(hasMAX){inject([base stringByAppendingPathComponent:s2.ffmaxPath]);}
-        else{
+        NSString *relPath = @"";
+        if ([svc.selectedGameMode isEqualToString:@"FFMAX"]) {
+            relPath = s2.ffmaxPath.length ? s2.ffmaxPath : (s2.ffthPath.length ? s2.ffthPath : s2.subPath);
+        } else {
+            relPath = s2.ffthPath.length ? s2.ffthPath : (s2.ffmaxPath.length ? s2.ffmaxPath : s2.subPath);
+        }
+        if (relPath.length > 0) {
+            inject([base stringByAppendingPathComponent:relPath]);
+        } else {
             ZXSlotCell*c2=(ZXSlotCell*)[svc->_tv cellForRowAtIndexPath:cIP];c2.sw.on=NO;
             [c2 setStatus:@"Set FFTH or FFMAX path in bot" color:UIColor.systemOrangeColor];
         }
@@ -1303,6 +1469,47 @@ static void ZXApplyModernButton(UIButton *btn) {
     _connLbl.textColor=ZXGreen;
     _connLbl.textAlignment=NSTextAlignmentRight;
     [sc addSubview:_connLbl];
+    
+    // Game Mode Switcher Button inside status card
+    UIButton *modeBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+    modeBtn.translatesAutoresizingMaskIntoConstraints = NO;
+    modeBtn.backgroundColor = [UIColor colorWithRed:0.12 green:0.04 blue:0.06 alpha:0.85];
+    modeBtn.layer.cornerRadius = 12;
+    modeBtn.layer.borderWidth = 0.8;
+    modeBtn.layer.borderColor = [UIColor colorWithRed:0.95 green:0.12 blue:0.28 alpha:0.45].CGColor;
+    [modeBtn addTarget:self action:@selector(showGameModeSelection) forControlEvents:UIControlEventTouchUpInside];
+    [sc addSubview:modeBtn];
+    
+    _modeBadgeLbl = [UILabel new];
+    _modeBadgeLbl.translatesAutoresizingMaskIntoConstraints = NO;
+    if ([self.selectedGameMode isEqualToString:@"FFMAX"]) {
+        _modeBadgeLbl.text = @"🔥 FF MAX";
+        _modeBadgeLbl.textColor = [UIColor colorWithRed:1.0 green:0.75 blue:0.2 alpha:1.0];
+    } else {
+        _modeBadgeLbl.text = @"⚡ FF NORMAL";
+        _modeBadgeLbl.textColor = [UIColor colorWithRed:0.25 green:0.88 blue:0.45 alpha:1.0];
+    }
+    _modeBadgeLbl.font = [UIFont systemFontOfSize:10.5 weight:UIFontWeightBlack];
+    [modeBtn addSubview:_modeBadgeLbl];
+    
+    UILabel *modeEditIcon = [UILabel new];
+    modeEditIcon.translatesAutoresizingMaskIntoConstraints = NO;
+    modeEditIcon.text = @" ⚙️";
+    modeEditIcon.font = [UIFont systemFontOfSize:10 weight:UIFontWeightBold];
+    [modeBtn addSubview:modeEditIcon];
+    
+    [NSLayoutConstraint activateConstraints:@[
+        [modeBtn.trailingAnchor constraintEqualToAnchor:sc.trailingAnchor constant:-12],
+        [modeBtn.centerYAnchor constraintEqualToAnchor:sc.centerYAnchor],
+        [modeBtn.heightAnchor constraintEqualToConstant:30],
+        
+        [_modeBadgeLbl.leadingAnchor constraintEqualToAnchor:modeBtn.leadingAnchor constant:10],
+        [_modeBadgeLbl.centerYAnchor constraintEqualToAnchor:modeBtn.centerYAnchor],
+        
+        [modeEditIcon.leadingAnchor constraintEqualToAnchor:_modeBadgeLbl.trailingAnchor constant:2],
+        [modeEditIcon.trailingAnchor constraintEqualToAnchor:modeBtn.trailingAnchor constant:-8],
+        [modeEditIcon.centerYAnchor constraintEqualToAnchor:modeBtn.centerYAnchor],
+    ]];
     
     // Section Header (| INJECTION SLOTS)
     UIView*accentBar=[UIView new];accentBar.translatesAutoresizingMaskIntoConstraints=NO;
