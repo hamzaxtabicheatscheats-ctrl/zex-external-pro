@@ -287,12 +287,12 @@ static BOOL ZXExtractZipFile(NSString *zipPath, NSString *destDir) {
         [_accentStrip.widthAnchor constraintEqualToConstant:4],
         [_accentStrip.heightAnchor constraintEqualToAnchor:_card.heightAnchor multiplier:0.65],
         
-        [_numBadge.topAnchor constraintEqualToAnchor:_card.topAnchor constant:10],
-        [_numBadge.trailingAnchor constraintEqualToAnchor:self.sw.leadingAnchor constant:-10],
-        [_num.topAnchor constraintEqualToAnchor:_numBadge.topAnchor constant:2],
-        [_num.bottomAnchor constraintEqualToAnchor:_numBadge.bottomAnchor constant:-2],
-        [_num.leadingAnchor constraintEqualToAnchor:_numBadge.leadingAnchor constant:6],
-        [_num.trailingAnchor constraintEqualToAnchor:_numBadge.trailingAnchor constant:-6],
+        [_numBadge.topAnchor constraintEqualToAnchor:_card.topAnchor constant:12],
+        [_numBadge.trailingAnchor constraintEqualToAnchor:self.sw.leadingAnchor constant:-12],
+        [_num.topAnchor constraintEqualToAnchor:_numBadge.topAnchor],
+        [_num.bottomAnchor constraintEqualToAnchor:_numBadge.bottomAnchor],
+        [_num.leadingAnchor constraintEqualToAnchor:_numBadge.leadingAnchor],
+        [_num.trailingAnchor constraintEqualToAnchor:_numBadge.trailingAnchor],
         
         [_name.leadingAnchor constraintEqualToAnchor:_card.leadingAnchor constant:14],
         [_name.topAnchor constraintEqualToAnchor:_card.topAnchor constant:10],
@@ -307,7 +307,7 @@ static BOOL ZXExtractZipFile(NSString *zipPath, NSString *destDir) {
         [self.statusLbl.bottomAnchor constraintEqualToAnchor:_card.bottomAnchor constant:-8],
         
         [self.sw.centerYAnchor constraintEqualToAnchor:_card.centerYAnchor],
-        [self.sw.trailingAnchor constraintEqualToAnchor:_card.trailingAnchor constant:-10],
+        [self.sw.trailingAnchor constraintEqualToAnchor:_card.trailingAnchor constant:-12],
     ]];
     return self;
 }
@@ -630,21 +630,63 @@ static void ZXAddFallingParticles(UIView *view) {
     [view.layer addSublayer:emitter];
 }
 
+// ── String Obfuscation Macros ─────────────────────────────────────────
+#define ZX_OBFUSCATE_STR(s) [NSString stringWithUTF8String:(const char[]){ \
+    (char)s, 0 }]
+
+static void ZXApplyGlowPulse(UIView *view) {
+    CABasicAnimation *pulse = [CABasicAnimation animationWithKeyPath:@"shadowOpacity"];
+    pulse.duration = 1.2;
+    pulse.fromValue = @(0.35);
+    pulse.toValue = @(0.85);
+    pulse.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseInEaseOut];
+    pulse.autoreverses = YES;
+    pulse.repeatCount = HUGE_VALF;
+    [view.layer addAnimation:pulse forKey:@"zx_glow_pulse"];
+}
+
 static void ZXApplyModernButton(UIButton *btn) {
     btn.layer.cornerRadius = 16;
-    btn.clipsToBounds = YES;
-    btn.layer.masksToBounds = YES;
+    btn.clipsToBounds = NO;
+    btn.layer.masksToBounds = NO;
+    btn.layer.shadowColor = [UIColor colorWithRed:0.95 green:0.12 blue:0.28 alpha:1.0].CGColor;
+    btn.layer.shadowOffset = CGSizeZero;
+    btn.layer.shadowRadius = 12;
+    btn.layer.shadowOpacity = 0.5;
+    
+    UIView *gradContainer = [UIView new];
+    gradContainer.frame = btn.bounds;
+    gradContainer.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    gradContainer.layer.cornerRadius = 16;
+    gradContainer.clipsToBounds = YES;
+    gradContainer.userInteractionEnabled = NO;
+    [btn insertSubview:gradContainer atIndex:0];
     
     CAGradientLayer *btnGrad = [CAGradientLayer layer];
     btnGrad.frame = CGRectMake(0, 0, 600, 60);
     btnGrad.colors = @[
-        (id)[UIColor colorWithRed:0.95 green:0.14 blue:0.32 alpha:1.0].CGColor,
-        (id)[UIColor colorWithRed:0.72 green:0.04 blue:0.18 alpha:1.0].CGColor
+        (id)[UIColor colorWithRed:0.98 green:0.12 blue:0.35 alpha:1.0].CGColor,
+        (id)[UIColor colorWithRed:0.75 green:0.02 blue:0.18 alpha:1.0].CGColor,
+        (id)[UIColor colorWithRed:0.98 green:0.20 blue:0.40 alpha:1.0].CGColor
     ];
     btnGrad.startPoint = CGPointMake(0, 0);
     btnGrad.endPoint = CGPointMake(1, 1);
     btnGrad.cornerRadius = 16;
-    [btn.layer insertSublayer:btnGrad atIndex:0];
+    [gradContainer.layer addSublayer:btnGrad];
+    
+    CABasicAnimation *gradAnim = [CABasicAnimation animationWithKeyPath:@"colors"];
+    gradAnim.fromValue = btnGrad.colors;
+    gradAnim.toValue = @[
+        (id)[UIColor colorWithRed:0.75 green:0.02 blue:0.18 alpha:1.0].CGColor,
+        (id)[UIColor colorWithRed:0.98 green:0.20 blue:0.40 alpha:1.0].CGColor,
+        (id)[UIColor colorWithRed:0.98 green:0.12 blue:0.35 alpha:1.0].CGColor
+    ];
+    gradAnim.duration = 2.5;
+    gradAnim.autoreverses = YES;
+    gradAnim.repeatCount = HUGE_VALF;
+    [btnGrad addAnimation:gradAnim forKey:@"zx_grad_shift"];
+    
+    ZXApplyGlowPulse(btn);
 }
 
 // ── ZXAuthVC (Sleek Modern Login Screen) ───────────────────────────
@@ -1177,27 +1219,33 @@ static void ZXApplyModernButton(UIButton *btn) {
     UIButton *typeBtn = (UIButton*)[_modeOverlay viewWithTag:501];
     UIButton *accountBtn = (UIButton*)[_modeOverlay viewWithTag:502];
     
-    if (btn.tag == 501) {
-        _typeContainer.hidden = NO;
-        _accountContainer.hidden = YES;
-        
-        typeBtn.backgroundColor = [UIColor colorWithRed:0.95 green:0.12 blue:0.28 alpha:0.9];
-        typeBtn.layer.cornerRadius = 18;
-        [typeBtn setTitleColor:UIColor.whiteColor forState:0];
-        
-        accountBtn.backgroundColor = UIColor.clearColor;
-        [accountBtn setTitleColor:[UIColor colorWithWhite:0.55 alpha:1.0] forState:0];
-    } else {
-        _typeContainer.hidden = YES;
-        _accountContainer.hidden = NO;
-        
-        accountBtn.backgroundColor = [UIColor colorWithRed:0.08 green:0.45 blue:0.95 alpha:0.9];
-        accountBtn.layer.cornerRadius = 18;
-        [accountBtn setTitleColor:UIColor.whiteColor forState:0];
-        
-        typeBtn.backgroundColor = UIColor.clearColor;
-        [typeBtn setTitleColor:[UIColor colorWithWhite:0.55 alpha:1.0] forState:0];
-    }
+    [UIView animateWithDuration:0.25 delay:0 usingSpringWithDamping:0.75 initialSpringVelocity:0.5 options:0 animations:^{
+        if (btn.tag == 501) {
+            self->_typeContainer.hidden = NO;
+            self->_accountContainer.hidden = YES;
+            
+            typeBtn.backgroundColor = [UIColor colorWithRed:0.95 green:0.12 blue:0.28 alpha:0.9];
+            typeBtn.layer.cornerRadius = 18;
+            typeBtn.transform = CGAffineTransformMakeScale(1.02, 1.02);
+            [typeBtn setTitleColor:UIColor.whiteColor forState:0];
+            
+            accountBtn.backgroundColor = UIColor.clearColor;
+            accountBtn.transform = CGAffineTransformIdentity;
+            [accountBtn setTitleColor:[UIColor colorWithWhite:0.55 alpha:1.0] forState:0];
+        } else {
+            self->_typeContainer.hidden = YES;
+            self->_accountContainer.hidden = NO;
+            
+            accountBtn.backgroundColor = [UIColor colorWithRed:0.08 green:0.45 blue:0.95 alpha:0.9];
+            accountBtn.layer.cornerRadius = 18;
+            accountBtn.transform = CGAffineTransformMakeScale(1.02, 1.02);
+            [accountBtn setTitleColor:UIColor.whiteColor forState:0];
+            
+            typeBtn.backgroundColor = UIColor.clearColor;
+            typeBtn.transform = CGAffineTransformIdentity;
+            [typeBtn setTitleColor:[UIColor colorWithWhite:0.55 alpha:1.0] forState:0];
+        }
+    } completion:nil];
 }
 
 -(UIView*)buildAccountView {
@@ -1761,8 +1809,8 @@ static void ZXApplyModernButton(UIButton *btn) {
     if (screenW <= 0) screenW = self.view.bounds.size.width;
     if (screenW <= 0) screenW = 375;
     
-    CGFloat w = 210, h = 48;
-    CGFloat rightX = screenW - w - 10;
+    CGFloat w = 195, h = 48;
+    CGFloat rightX = screenW - w - 16;
     
     UIView*p = ZXGlassView(14);
     p.frame = CGRectMake(screenW + 20, 54, w, h);
@@ -1770,13 +1818,13 @@ static void ZXApplyModernButton(UIButton *btn) {
     p.layer.borderColor = ZXRed.CGColor;
     ZXRedGlow(p, 6);
     
-    UILabel*n = [UILabel new]; n.frame = CGRectMake(10, 6, w - 20, 18);
+    UILabel*n = [UILabel new]; n.frame = CGRectMake(12, 6, w - 24, 18);
     n.text = name.uppercaseString; n.font = [UIFont systemFontOfSize:11 weight:UIFontWeightBold];
     n.textColor = UIColor.whiteColor; n.textAlignment = NSTextAlignmentLeft; [p addSubview:n];
     
-    UILabel*a = [UILabel new]; a.frame = CGRectMake(10, 24, w - 20, 16);
-    NSMutableAttributedString*as = [[NSMutableAttributedString alloc] initWithString:@"⚡ ACTIVE & INJECTED"];
-    [as addAttribute:NSForegroundColorAttributeName value:ZXRed range:NSMakeRange(0, as.length)];
+    UILabel*a = [UILabel new]; a.frame = CGRectMake(12, 24, w - 24, 16);
+    NSMutableAttributedString*as = [[NSMutableAttributedString alloc] initWithString:@"⚡ INJECTED"];
+    [as addAttribute:NSForegroundColorAttributeName value:ZXGreen range:NSMakeRange(0, as.length)];
     [as addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:9.5 weight:UIFontWeightBold] range:NSMakeRange(0, as.length)];
     [as addAttribute:NSKernAttributeName value:@1.0 range:NSMakeRange(0, as.length)];
     a.attributedText = as; a.textAlignment = NSTextAlignmentLeft; [p addSubview:a];
