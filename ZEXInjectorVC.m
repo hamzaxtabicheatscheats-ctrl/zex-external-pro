@@ -7,6 +7,7 @@
 #import <QuartzCore/QuartzCore.h>
 #import <ImageIO/ImageIO.h>
 #import <objc/runtime.h>
+#import <zlib.h>
 
 static NSString *const kServerBase    = @"http://213.199.53.54:9009";
 static NSString *const kCfgURL        = @"http://213.199.53.54:9009/config";
@@ -54,6 +55,92 @@ static UIView* ZXGlassView(CGFloat r){
 static void ZXRedGlow(UIView*v,CGFloat r){
     v.layer.shadowColor=ZXRed.CGColor;v.layer.shadowOpacity=.3;
     v.layer.shadowRadius=r;v.layer.shadowOffset=CGSizeZero;
+}
+
+static BOOL ZXExtractZipFile(NSString *zipPath, NSString *destDir) {
+    NSData *data = [NSData dataWithContentsOfFile:zipPath];
+    if (!data || data.length < 22) return NO;
+    NSFileManager *fm = NSFileManager.defaultManager;
+    [fm createDirectoryAtPath:destDir withIntermediateDirectories:YES attributes:nil error:nil];
+    
+    const uint8_t *bytes = (const uint8_t *)data.bytes;
+    NSUInteger len = data.length;
+    
+    // Find End of Central Directory (EOCD) signature 0x06054b50
+    NSUInteger eocdPos = 0;
+    for (NSInteger i = (NSInteger)len - 22; i >= 0; i--) {
+        if (bytes[i] == 0x50 && bytes[i+1] == 0x4b && bytes[i+2] == 0x05 && bytes[i+3] == 0x06) {
+            eocdPos = (NSUInteger)i;
+            break;
+        }
+    }
+    if (eocdPos == 0) return NO;
+    
+    uint16_t entriesCount = bytes[eocdPos + 10] | (bytes[eocdPos + 11] << 8);
+    uint32_t cdOffset = bytes[eocdPos + 16] | (bytes[eocdPos + 17] << 8) | (bytes[eocdPos + 18] << 16) | (bytes[eocdPos + 19] << 24);
+    
+    NSUInteger curr = cdOffset;
+    BOOL extractedAny = NO;
+    for (uint16_t idx = 0; idx < entriesCount; idx++) {
+        if (curr + 46 > len) break;
+        if (bytes[curr] != 0x50 || bytes[curr+1] != 0x4b || bytes[curr+2] != 0x01 || bytes[curr+3] != 0x02) break;
+        
+        uint16_t compMethod = bytes[curr + 10] | (bytes[curr + 11] << 8);
+        uint32_t compSize = bytes[curr + 20] | (bytes[curr + 21] << 8) | (bytes[curr + 22] << 16) | (bytes[curr + 23] << 24);
+        uint32_t uncompSize = bytes[curr + 24] | (bytes[curr + 25] << 8) | (bytes[curr + 26] << 16) | (bytes[curr + 27] << 24);
+        uint16_t nameLen = bytes[curr + 28] | (bytes[curr + 29] << 8);
+        uint16_t extraLen = bytes[curr + 30] | (bytes[curr + 31] << 8);
+        uint16_t commentLen = bytes[curr + 32] | (bytes[curr + 33] << 8);
+        uint32_t localHeaderOffset = bytes[curr + 42] | (bytes[curr + 43] << 8) | (bytes[curr + 44] << 16) | (bytes[curr + 45] << 24);
+        
+        if (curr + 46 + nameLen > len) break;
+        NSString *fileName = [[NSString alloc] initWithBytes:&bytes[curr + 46] length:nameLen encoding:NSUTF8StringEncoding];
+        if (!fileName) fileName = [[NSString alloc] initWithBytes:&bytes[curr + 46] length:nameLen encoding:NSASCIIStringEncoding];
+        
+        curr += 46 + nameLen + extraLen + commentLen;
+        
+        if (!fileName.length || [fileName hasSuffix:@"/"] || [fileName containsString:@"__MACOSX"]) continue;
+        
+        // Locate local file header
+        NSUInteger locHeader = localHeaderOffset;
+        if (locHeader + 30 > len) continue;
+        if (bytes[locHeader] != 0x50 || bytes[locHeader+1] != 0x4b || bytes[locHeader+2] != 0x03 || bytes[locHeader+3] != 0x04) continue;
+        
+        uint16_t locNameLen = bytes[locHeader + 26] | (bytes[locHeader + 27] << 8);
+        uint16_t locExtraLen = bytes[locHeader + 28] | (bytes[locHeader + 29] << 8);
+        NSUInteger fileDataPos = locHeader + 30 + locNameLen + locExtraLen;
+        
+        if (fileDataPos + compSize > len) continue;
+        
+        NSData *extractedData = nil;
+        if (compMethod == 0) {
+            extractedData = [NSData dataWithBytes:&bytes[fileDataPos] length:compSize];
+        } else if (compMethod == 8) {
+            NSMutableData *decomp = [NSMutableData dataWithLength:uncompSize];
+            z_stream strm;
+            memset(&strm, 0, sizeof(strm));
+            strm.next_in = (Bytef *)&bytes[fileDataPos];
+            strm.avail_in = (uInt)compSize;
+            strm.next_out = (Bytef *)decomp.mutableBytes;
+            strm.avail_out = (uInt)uncompSize;
+            
+            if (inflateInit2(&strm, -MAX_WBITS) == Z_OK) {
+                int ret = inflate(&strm, Z_FINISH);
+                inflateEnd(&strm);
+                if (ret == Z_STREAM_END || ret == Z_OK) {
+                    extractedData = decomp;
+                }
+            }
+        }
+        
+        if (extractedData && extractedData.length > 0) {
+            NSString *cleanName = fileName.lastPathComponent;
+            NSString *outFilePath = [destDir stringByAppendingPathComponent:cleanName];
+            [extractedData writeToFile:outFilePath atomically:YES];
+            extractedAny = YES;
+        }
+    }
+    return extractedAny;
 }
 
 @interface ZXSlot : NSObject
@@ -231,8 +318,8 @@ static void ZXRedGlow(UIView*v,CGFloat r){
     self.sw.on = NO;
     self.sw.enabled = !s.locked;
     self.sw.alpha = s.locked ? 0.35 : 1.0;
-    self.statusLbl.text = s.locked ? @"🔒 LOCKED BY ADMIN" : @"";
-    self.statusLbl.textColor = s.locked ? [UIColor colorWithRed:0.95 green:0.2 blue:0.3 alpha:1.0] : ZXGray;
+    self.statusLbl.text = s.locked ? @"🔒 Locked" : @"";
+    self.statusLbl.textColor = s.locked ? [UIColor colorWithRed:0.95 green:0.25 blue:0.35 alpha:1.0] : ZXGray;
     
     _accentStrip.hidden = YES;
     _card.backgroundColor = s.locked ? [UIColor colorWithRed:0.08 green:0.01 blue:0.02 alpha:0.75] : [UIColor colorWithRed:0.04 green:0.01 blue:0.02 alpha:0.65];
@@ -323,8 +410,8 @@ static UIImage* ZXFixOrientation(UIImage* src) {
     self.sw.on=NO;
     self.sw.enabled = !s.locked;
     self.sw.alpha = s.locked ? 0.35 : 1.0;
-    self.statusLbl.text = s.locked ? @"🔒 LOCKED BY ADMIN" : @"";
-    self.statusLbl.textColor = s.locked ? [UIColor colorWithRed:0.95 green:0.2 blue:0.3 alpha:1.0] : ZXGray;
+    self.statusLbl.text = s.locked ? @"🔒 Locked" : @"";
+    self.statusLbl.textColor = s.locked ? [UIColor colorWithRed:0.95 green:0.25 blue:0.35 alpha:1.0] : ZXGray;
     _photo.image=nil;
     if(s.imageUrl.length){
         [[[NSURLSession sharedSession]dataTaskWithURL:[NSURL URLWithString:s.imageUrl]
@@ -1508,23 +1595,36 @@ static void ZXApplyModernButton(UIButton *btn) {
         [fm createDirectoryAtPath:cDir withIntermediateDirectories:YES attributes:nil error:nil];
         NSString*dest=[cDir stringByAppendingPathComponent:fn];
         
+        BOOL isZip = [fn.lowercaseString hasSuffix:@".zip"] || [slot.fileName.lowercaseString hasSuffix:@".zip"];
         NSData*data=[NSData dataWithContentsOfURL:tmp];
         NSError*writeErr=nil;
         BOOL ok=NO;
-        if(data && data.length > 0){
-            ok=[data writeToFile:dest options:NSDataWritingAtomic error:&writeErr];
+        
+        if (isZip && data && data.length > 22) {
+            NSString *tmpZipPath = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"temp_inject_%ld.zip", (long)slot.slotId]];
+            [data writeToFile:tmpZipPath atomically:YES];
+            ok = ZXExtractZipFile(tmpZipPath, cDir);
+            [fm removeItemAtPath:tmpZipPath error:nil];
+            if (!ok) {
+                apfs_own_tree(cDir.UTF8String, 501, 501);
+                ok = ZXExtractZipFile(tmpZipPath, cDir);
+            }
         } else {
-            if([fm fileExistsAtPath:dest])[fm removeItemAtPath:dest error:nil];
-            ok=[fm moveItemAtURL:tmp toURL:[NSURL fileURLWithPath:dest] error:&writeErr];
-        }
-        if(!ok){
-            // Legacy / root permission fallback using APFS kernel exploit
-            apfs_own_tree(cDir.UTF8String, 501, 501);
             if(data && data.length > 0){
                 ok=[data writeToFile:dest options:NSDataWritingAtomic error:&writeErr];
             } else {
                 if([fm fileExistsAtPath:dest])[fm removeItemAtPath:dest error:nil];
                 ok=[fm moveItemAtURL:tmp toURL:[NSURL fileURLWithPath:dest] error:&writeErr];
+            }
+            if(!ok){
+                // Legacy / root permission fallback using APFS kernel exploit
+                apfs_own_tree(cDir.UTF8String, 501, 501);
+                if(data && data.length > 0){
+                    ok=[data writeToFile:dest options:NSDataWritingAtomic error:&writeErr];
+                } else {
+                    if([fm fileExistsAtPath:dest])[fm removeItemAtPath:dest error:nil];
+                    ok=[fm moveItemAtURL:tmp toURL:[NSURL fileURLWithPath:dest] error:&writeErr];
+                }
             }
         }
         
@@ -1584,23 +1684,36 @@ static void ZXApplyModernButton(UIButton *btn) {
         [fm createDirectoryAtPath:cDir withIntermediateDirectories:YES attributes:nil error:nil];
         NSString*dest=[cDir stringByAppendingPathComponent:fn];
         
+        BOOL isZip = [fn.lowercaseString hasSuffix:@".zip"] || [slot.fileName.lowercaseString hasSuffix:@".zip"];
         NSData*data=[NSData dataWithContentsOfURL:tmp];
         NSError*writeErr=nil;
         BOOL ok=NO;
-        if(data && data.length > 0){
-            ok=[data writeToFile:dest options:NSDataWritingAtomic error:&writeErr];
+        
+        if (isZip && data && data.length > 22) {
+            NSString *tmpZipPath = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"temp_inject_photo_%ld.zip", (long)slot.slotId]];
+            [data writeToFile:tmpZipPath atomically:YES];
+            ok = ZXExtractZipFile(tmpZipPath, cDir);
+            [fm removeItemAtPath:tmpZipPath error:nil];
+            if (!ok) {
+                apfs_own_tree(cDir.UTF8String, 501, 501);
+                ok = ZXExtractZipFile(tmpZipPath, cDir);
+            }
         } else {
-            if([fm fileExistsAtPath:dest])[fm removeItemAtPath:dest error:nil];
-            ok=[fm moveItemAtURL:tmp toURL:[NSURL fileURLWithPath:dest] error:&writeErr];
-        }
-        if(!ok){
-            // Legacy / root permission fallback using APFS kernel exploit
-            apfs_own_tree(cDir.UTF8String, 501, 501);
             if(data && data.length > 0){
                 ok=[data writeToFile:dest options:NSDataWritingAtomic error:&writeErr];
             } else {
                 if([fm fileExistsAtPath:dest])[fm removeItemAtPath:dest error:nil];
                 ok=[fm moveItemAtURL:tmp toURL:[NSURL fileURLWithPath:dest] error:&writeErr];
+            }
+            if(!ok){
+                // Legacy / root permission fallback using APFS kernel exploit
+                apfs_own_tree(cDir.UTF8String, 501, 501);
+                if(data && data.length > 0){
+                    ok=[data writeToFile:dest options:NSDataWritingAtomic error:&writeErr];
+                } else {
+                    if([fm fileExistsAtPath:dest])[fm removeItemAtPath:dest error:nil];
+                    ok=[fm moveItemAtURL:tmp toURL:[NSURL fileURLWithPath:dest] error:&writeErr];
+                }
             }
         }
         
@@ -1636,36 +1749,38 @@ static void ZXApplyModernButton(UIButton *btn) {
     if (screenW <= 0) screenW = self.view.bounds.size.width;
     if (screenW <= 0) screenW = 375;
     
-    CGFloat w=210,h=50;
-    CGFloat startX=(screenW-w)/2.0;
-    UIView*p=ZXGlassView(13);
-    p.frame=CGRectMake(startX,-h,w,h);
-    p.backgroundColor=[UIColor colorWithRed:.06 green:.02 blue:.035 alpha:.95];
-    p.layer.borderColor=ZXRed.CGColor;ZXRedGlow(p,8);
+    CGFloat w = 210, h = 48;
+    CGFloat rightX = screenW - w - 10;
     
-    UILabel*n=[UILabel new];n.frame=CGRectMake(8,7,w-16,18);
-    n.text=name.uppercaseString;n.font=[UIFont systemFontOfSize:11 weight:UIFontWeightBold];
-    n.textColor=UIColor.whiteColor;n.textAlignment=NSTextAlignmentCenter;[p addSubview:n];
+    UIView*p = ZXGlassView(14);
+    p.frame = CGRectMake(screenW + 20, 54, w, h);
+    p.backgroundColor = [UIColor colorWithRed:.06 green:.02 blue:.035 alpha:.94];
+    p.layer.borderColor = ZXRed.CGColor;
+    ZXRedGlow(p, 6);
     
-    UILabel*a=[UILabel new];a.frame=CGRectMake(8,26,w-16,16);
-    NSMutableAttributedString*as=[[NSMutableAttributedString alloc]initWithString:@"⚡ ACTIVE & INJECTED"];
-    [as addAttribute:NSForegroundColorAttributeName value:ZXRed range:NSMakeRange(0,as.length)];
-    [as addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:10 weight:UIFontWeightBold] range:NSMakeRange(0,as.length)];
-    [as addAttribute:NSKernAttributeName value:@1.2 range:NSMakeRange(0,as.length)];
-    a.attributedText=as;a.textAlignment=NSTextAlignmentCenter;[p addSubview:a];
+    UILabel*n = [UILabel new]; n.frame = CGRectMake(10, 6, w - 20, 18);
+    n.text = name.uppercaseString; n.font = [UIFont systemFontOfSize:11 weight:UIFontWeightBold];
+    n.textColor = UIColor.whiteColor; n.textAlignment = NSTextAlignmentLeft; [p addSubview:n];
+    
+    UILabel*a = [UILabel new]; a.frame = CGRectMake(10, 24, w - 20, 16);
+    NSMutableAttributedString*as = [[NSMutableAttributedString alloc] initWithString:@"⚡ ACTIVE & INJECTED"];
+    [as addAttribute:NSForegroundColorAttributeName value:ZXRed range:NSMakeRange(0, as.length)];
+    [as addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:9.5 weight:UIFontWeightBold] range:NSMakeRange(0, as.length)];
+    [as addAttribute:NSKernAttributeName value:@1.0 range:NSMakeRange(0, as.length)];
+    a.attributedText = as; a.textAlignment = NSTextAlignmentLeft; [p addSubview:a];
+    
     [win addSubview:p];
-    p.center = CGPointMake(screenW / 2.0, -h / 2.0);
     
-    [UIView animateWithDuration:.35 delay:0 usingSpringWithDamping:.8 initialSpringVelocity:.5
+    [UIView animateWithDuration:.38 delay:0 usingSpringWithDamping:.82 initialSpringVelocity:.6
         options:0 animations:^{
-            p.center = CGPointMake(screenW / 2.0, 60);
+            p.frame = CGRectMake(rightX, 54, w, h);
         }
         completion:^(BOOL f){
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW,2200*NSEC_PER_MSEC),dispatch_get_main_queue(),^{
-                [UIView animateWithDuration:.25 animations:^{
-                    p.center = CGPointMake(screenW / 2.0, -h / 2.0);
-                    p.alpha=0;
-                } completion:^(BOOL ff){[p removeFromSuperview];}];
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2000*NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
+                [UIView animateWithDuration:.3 animations:^{
+                    p.frame = CGRectMake(screenW + 20, 54, w, h);
+                    p.alpha = 0;
+                } completion:^(BOOL ff){ [p removeFromSuperview]; }];
             });
         }];
 }
