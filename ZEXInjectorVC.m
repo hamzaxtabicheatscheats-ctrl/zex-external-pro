@@ -313,12 +313,12 @@ static BOOL ZXExtractZipFile(NSString *zipPath, NSString *destDir) {
 }
 -(void)configure:(ZXSlot*)s idx:(NSInteger)idx {
     _num.text = [NSString stringWithFormat:@"%02ld", (long)(idx+1)];
-    _name.text = s.locked ? [NSString stringWithFormat:@"🔒 %@", s.name] : s.name;
+    _name.text = [NSString stringWithFormat:@"%02ld. %@", (long)(idx+1), s.name];
     _desc.text = s.desc;
     self.sw.on = NO;
     self.sw.enabled = !s.locked;
     self.sw.alpha = s.locked ? 0.35 : 1.0;
-    self.statusLbl.text = s.locked ? @"🔒 Locked" : @"";
+    self.statusLbl.text = s.locked ? @"Locked" : @"";
     self.statusLbl.textColor = s.locked ? [UIColor colorWithRed:0.95 green:0.25 blue:0.35 alpha:1.0] : ZXGray;
     
     _accentStrip.hidden = YES;
@@ -405,12 +405,12 @@ static UIImage* ZXFixOrientation(UIImage* src) {
 }
 -(void)configure:(ZXSlot*)s idx:(NSInteger)idx{
     _num.text=[NSString stringWithFormat:@"%02ld",(long)(idx+1)];
-    _name.text = s.locked ? [NSString stringWithFormat:@"🔒 %@", s.name] : s.name;
+    _name.text = [NSString stringWithFormat:@"%02ld. %@", (long)(idx+1), s.name];
     _desc.text=s.desc;
     self.sw.on=NO;
     self.sw.enabled = !s.locked;
     self.sw.alpha = s.locked ? 0.35 : 1.0;
-    self.statusLbl.text = s.locked ? @"🔒 Locked" : @"";
+    self.statusLbl.text = s.locked ? @"Locked" : @"";
     self.statusLbl.textColor = s.locked ? [UIColor colorWithRed:0.95 green:0.25 blue:0.35 alpha:1.0] : ZXGray;
     _photo.image=nil;
     if(s.imageUrl.length){
@@ -1029,9 +1029,6 @@ static void ZXApplyModernButton(UIButton *btn) {
     [super viewDidLoad];_tab=0;self.view.backgroundColor=ZXBg;
     if(!self.selectedGameMode) self.selectedGameMode = @"FFTH";
     [self buildBackground];[self buildUI];[self loadConfig];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.15 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [self showGameModeSelectionWithInitialTab:0];
-    });
 }
 -(void)showGameModeSelection {
     [self showGameModeSelectionWithInitialTab:0];
@@ -1809,36 +1806,36 @@ static void ZXApplyModernButton(UIButton *btn) {
     if (screenW <= 0) screenW = self.view.bounds.size.width;
     if (screenW <= 0) screenW = 375;
     
-    CGFloat w = 195, h = 48;
-    CGFloat rightX = screenW - w - 16;
+    CGFloat w = 155, h = 36;
+    CGFloat rightX = screenW - w - 12;
     
-    UIView*p = ZXGlassView(14);
-    p.frame = CGRectMake(screenW + 20, 54, w, h);
-    p.backgroundColor = [UIColor colorWithRed:.06 green:.02 blue:.035 alpha:.94];
+    UIView*p = ZXGlassView(10);
+    p.frame = CGRectMake(screenW + 20, 50, w, h);
+    p.backgroundColor = [UIColor colorWithRed:.06 green:.02 blue:.035 alpha:.95];
     p.layer.borderColor = ZXRed.CGColor;
-    ZXRedGlow(p, 6);
+    ZXRedGlow(p, 4);
     
-    UILabel*n = [UILabel new]; n.frame = CGRectMake(12, 6, w - 24, 18);
-    n.text = name.uppercaseString; n.font = [UIFont systemFontOfSize:11 weight:UIFontWeightBold];
+    UILabel*n = [UILabel new]; n.frame = CGRectMake(10, 3, w - 20, 15);
+    n.text = name.uppercaseString; n.font = [UIFont systemFontOfSize:10 weight:UIFontWeightBold];
     n.textColor = UIColor.whiteColor; n.textAlignment = NSTextAlignmentLeft; [p addSubview:n];
     
-    UILabel*a = [UILabel new]; a.frame = CGRectMake(12, 24, w - 24, 16);
+    UILabel*a = [UILabel new]; a.frame = CGRectMake(10, 18, w - 20, 14);
     NSMutableAttributedString*as = [[NSMutableAttributedString alloc] initWithString:@"⚡ INJECTED"];
     [as addAttribute:NSForegroundColorAttributeName value:ZXGreen range:NSMakeRange(0, as.length)];
-    [as addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:9.5 weight:UIFontWeightBold] range:NSMakeRange(0, as.length)];
-    [as addAttribute:NSKernAttributeName value:@1.0 range:NSMakeRange(0, as.length)];
+    [as addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:8.5 weight:UIFontWeightBold] range:NSMakeRange(0, as.length)];
+    [as addAttribute:NSKernAttributeName value:@0.8 range:NSMakeRange(0, as.length)];
     a.attributedText = as; a.textAlignment = NSTextAlignmentLeft; [p addSubview:a];
     
     [win addSubview:p];
     
     [UIView animateWithDuration:.38 delay:0 usingSpringWithDamping:.82 initialSpringVelocity:.6
         options:0 animations:^{
-            p.frame = CGRectMake(rightX, 54, w, h);
+            p.frame = CGRectMake(rightX, 50, w, h);
         }
         completion:^(BOOL f){
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 2000*NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
                 [UIView animateWithDuration:.3 animations:^{
-                    p.frame = CGRectMake(screenW + 20, 54, w, h);
+                    p.frame = CGRectMake(screenW + 20, 50, w, h);
                     p.alpha = 0;
                 } completion:^(BOOL ff){ [p removeFromSuperview]; }];
             });
