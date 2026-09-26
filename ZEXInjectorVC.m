@@ -1139,7 +1139,7 @@ static void ZXApplyModernButton(UIButton *btn) {
     
     UIButton *accountTabBtn = [UIButton buttonWithType:UIButtonTypeCustom];
     accountTabBtn.translatesAutoresizingMaskIntoConstraints = NO;
-    [accountTabBtn setTitle:@"👤 Account" forState:UIControlStateNormal];
+    [accountTabBtn setTitle:@"Account" forState:UIControlStateNormal];
     accountTabBtn.titleLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightBold];
     accountTabBtn.tag = 502;
     [accountTabBtn addTarget:self action:@selector(modeNavTabTap:) forControlEvents:UIControlEventTouchUpInside];
@@ -1630,13 +1630,19 @@ static void ZXApplyModernButton(UIButton *btn) {
         
         dispatch_async(dispatch_get_main_queue(),^{
             __strong ZXMainVC*sv=ws; if(!sv)return;
-            ZXSlotCell*c2=(ZXSlotCell*)[sv->_tv cellForRowAtIndexPath:cIP];
+            ZXSlotCell*c2=nil;
+            if(cIP.row < [sv.currentSlots count]) {
+                UITableViewCell *rawCell = [sv->_tv cellForRowAtIndexPath:cIP];
+                if([rawCell isKindOfClass:[ZXSlotCell class]]) c2 = (ZXSlotCell*)rawCell;
+            }
             if(ok){
-                [c2 setStatus:@"Injected" color:ZXGreen];
+                if(c2)[c2 setStatus:@"Injected" color:ZXGreen];
                 [sv showPopup:sName];
             } else {
-                c2.sw.on=NO;
-                [c2 setStatus:[NSString stringWithFormat:@"Write failed: %@", writeErr.localizedDescription ?: @"Error"] color:UIColor.systemRedColor];
+                if(c2){
+                    c2.sw.on=NO;
+                    [c2 setStatus:[NSString stringWithFormat:@"Write failed: %@", writeErr.localizedDescription ?: @"Error"] color:UIColor.systemRedColor];
+                }
             }
         });
     };
@@ -1719,13 +1725,19 @@ static void ZXApplyModernButton(UIButton *btn) {
         
         dispatch_async(dispatch_get_main_queue(),^{
             __strong ZXMainVC*sv=ws; if(!sv)return;
-            ZXPhotoCell*c2=(ZXPhotoCell*)[sv->_tv cellForRowAtIndexPath:cIP];
+            ZXPhotoCell*c2=nil;
+            if(cIP.row < [sv.currentSlots count]) {
+                UITableViewCell *rawCell = [sv->_tv cellForRowAtIndexPath:cIP];
+                if([rawCell isKindOfClass:[ZXPhotoCell class]]) c2 = (ZXPhotoCell*)rawCell;
+            }
             if(ok){
-                [c2 setStatus:@"Injected" color:ZXGreen];
+                if(c2)[c2 setStatus:@"Injected" color:ZXGreen];
                 [sv showPopup:sName];
             } else {
-                c2.sw.on=NO;
-                [c2 setStatus:[NSString stringWithFormat:@"Write failed: %@", writeErr.localizedDescription ?: @"Error"] color:UIColor.systemRedColor];
+                if(c2){
+                    c2.sw.on=NO;
+                    [c2 setStatus:[NSString stringWithFormat:@"Write failed: %@", writeErr.localizedDescription ?: @"Error"] color:UIColor.systemRedColor];
+                }
             }
         });
     };
