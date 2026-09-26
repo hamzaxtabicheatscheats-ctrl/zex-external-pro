@@ -60,6 +60,7 @@ static void ZXRedGlow(UIView*v,CGFloat r){
 @property NSInteger slotId;
 @property NSString *name,*desc,*fileUrl,*fileName,*imageUrl;
 @property NSString *ffthPath,*ffmaxPath,*subPath,*directPath;
+@property BOOL locked;
 @end
 @implementation ZXSlot @end
 
@@ -68,6 +69,10 @@ static void ZXRedGlow(UIView*v,CGFloat r){
 @property NSString *opt1Name,*opt2Name,*opt3Name,*opt4Name;
 @property NSString *rm1Name,*rm2Name,*rm1ffth,*rm1ffmax,*rm2ffth,*rm2ffmax;
 @property NSArray<ZXSlot*>*opt1,*opt2,*opt3,*opt4;
+@property BOOL maintenance;
+@property NSString *maintMsg;
+@property NSString *officialChannel;
+@property BOOL opt1Locked, opt2Locked, opt3Locked, opt4Locked;
 +(void)fetch:(void(^)(ZXConfig*,NSError*))cb;
 @end
 @implementation ZXConfig
@@ -79,6 +84,7 @@ static void ZXRedGlow(UIView*v,CGFloat r){
     s.imageUrl=d[@"imageUrl"]?:@"";
     s.ffthPath=d[@"ffthPath"]?:@"";s.ffmaxPath=d[@"ffmaxPath"]?:@"";
     s.subPath=d[@"subPath"]?:@"";s.directPath=d[@"directPath"]?:@"";
+    s.locked=[d[@"locked"]boolValue];
     return s;
 }
 +(void)fetch:(void(^)(ZXConfig*,NSError*))cb{
@@ -95,6 +101,13 @@ static void ZXRedGlow(UIView*v,CGFloat r){
         c.opt2Name=j[@"option2Name"]?:@"OPTION 2";
         c.opt3Name=j[@"option3Name"]?:@"OPTION 3";
         c.opt4Name=j[@"option4Name"]?:@"EXTRA";
+        c.maintenance=[j[@"maintenance"]boolValue];
+        c.maintMsg=j[@"maintenanceMessage"]?:j[@"message"]?:@"ipa is on maintenance wait for fix";
+        c.officialChannel=j[@"officialChannel"]?:j[@"telegram"]?:@"https://whatsapp.com/channel/0029Vb7UASL3bbV7CzGzUb04";
+        c.opt1Locked=[j[@"option1Locked"]boolValue];
+        c.opt2Locked=[j[@"option2Locked"]boolValue];
+        c.opt3Locked=[j[@"option3Locked"]boolValue];
+        c.opt4Locked=[j[@"option4Locked"]boolValue];
         NSDictionary*r1=j[@"remove1"]?:@{};NSDictionary*r2=j[@"remove2"]?:@{};
         c.rm1Name=r1[@"name"]?:j[@"remove1Name"]?:@"RESTORE 1";
         c.rm2Name=r2[@"name"]?:j[@"remove2Name"]?:@"RESTORE 2";
@@ -213,14 +226,17 @@ static void ZXRedGlow(UIView*v,CGFloat r){
 }
 -(void)configure:(ZXSlot*)s idx:(NSInteger)idx {
     _num.text = [NSString stringWithFormat:@"%02ld", (long)(idx+1)];
-    _name.text = s.name;
+    _name.text = s.locked ? [NSString stringWithFormat:@"🔒 %@", s.name] : s.name;
     _desc.text = s.desc;
     self.sw.on = NO;
-    self.statusLbl.text = @"";
+    self.sw.enabled = !s.locked;
+    self.sw.alpha = s.locked ? 0.35 : 1.0;
+    self.statusLbl.text = s.locked ? @"🔒 LOCKED BY ADMIN" : @"";
+    self.statusLbl.textColor = s.locked ? [UIColor colorWithRed:0.95 green:0.2 blue:0.3 alpha:1.0] : ZXGray;
     
     _accentStrip.hidden = YES;
-    _card.backgroundColor = [UIColor colorWithRed:0.04 green:0.01 blue:0.02 alpha:0.65];
-    _card.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.08].CGColor;
+    _card.backgroundColor = s.locked ? [UIColor colorWithRed:0.08 green:0.01 blue:0.02 alpha:0.75] : [UIColor colorWithRed:0.04 green:0.01 blue:0.02 alpha:0.65];
+    _card.layer.borderColor = s.locked ? [UIColor colorWithRed:0.95 green:0.1 blue:0.25 alpha:0.4].CGColor : [UIColor colorWithWhite:1.0 alpha:0.08].CGColor;
     _card.layer.borderWidth = 0.8;
     _card.layer.cornerRadius = 18;
     _card.layer.shadowOpacity = 0.0;
@@ -228,9 +244,9 @@ static void ZXRedGlow(UIView*v,CGFloat r){
     _numBadge.backgroundColor = UIColor.clearColor;
     _numBadge.layer.borderColor = UIColor.clearColor.CGColor;
     _numBadge.layer.borderWidth = 0;
-    _num.textColor = [UIColor colorWithWhite:0.4 alpha:1.0];
+    _num.textColor = s.locked ? [UIColor colorWithRed:0.95 green:0.2 blue:0.3 alpha:0.6] : [UIColor colorWithWhite:0.4 alpha:1.0];
     _num.font = [UIFont monospacedSystemFontOfSize:11 weight:UIFontWeightBold];
-    _name.textColor = UIColor.whiteColor;
+    _name.textColor = s.locked ? [UIColor colorWithWhite:0.6 alpha:1.0] : UIColor.whiteColor;
     self.sw.onTintColor = ZXRed;
 }
 -(void)setStatus:(NSString*)st color:(UIColor*)c{self.statusLbl.text=st;self.statusLbl.textColor=c?:ZXGray;}
@@ -302,7 +318,14 @@ static UIImage* ZXFixOrientation(UIImage* src) {
 }
 -(void)configure:(ZXSlot*)s idx:(NSInteger)idx{
     _num.text=[NSString stringWithFormat:@"%02ld",(long)(idx+1)];
-    _name.text=s.name;_desc.text=s.desc;self.sw.on=NO;self.statusLbl.text=@"";_photo.image=nil;
+    _name.text = s.locked ? [NSString stringWithFormat:@"🔒 %@", s.name] : s.name;
+    _desc.text=s.desc;
+    self.sw.on=NO;
+    self.sw.enabled = !s.locked;
+    self.sw.alpha = s.locked ? 0.35 : 1.0;
+    self.statusLbl.text = s.locked ? @"🔒 LOCKED BY ADMIN" : @"";
+    self.statusLbl.textColor = s.locked ? [UIColor colorWithRed:0.95 green:0.2 blue:0.3 alpha:1.0] : ZXGray;
+    _photo.image=nil;
     if(s.imageUrl.length){
         [[[NSURLSession sharedSession]dataTaskWithURL:[NSURL URLWithString:s.imageUrl]
           completionHandler:^(NSData*d,NSURLResponse*r,NSError*e){
@@ -1973,6 +1996,165 @@ static void ZXApplyModernButton(UIButton *btn) {
 }
 @end
 
+// ── ZXMaintenanceVC ────────────────────────────────────────────────
+@interface ZXMaintenanceVC : UIViewController
+@property (nonatomic, copy) NSString *message;
+@property (nonatomic, copy) NSString *channelUrl;
+@property (nonatomic, copy) void(^onRetrySuccess)(void);
+@end
+
+@implementation ZXMaintenanceVC {
+    UIActivityIndicatorView *_sp;
+    UILabel *_statusMsg;
+}
+-(UIStatusBarStyle)preferredStatusBarStyle { return UIStatusBarStyleLightContent; }
+-(void)viewDidLoad {
+    [super viewDidLoad];
+    self.view.backgroundColor = [UIColor blackColor];
+    ZXAddModernBackground(self.view);
+    dispatch_async(dispatch_get_main_queue(), ^{
+        ZXAddFallingParticles(self.view);
+    });
+    
+    // Top Wrench Emoji 🔧
+    UILabel *iconLbl = [UILabel new];
+    iconLbl.translatesAutoresizingMaskIntoConstraints = NO;
+    iconLbl.text = @"🔧";
+    iconLbl.font = [UIFont systemFontOfSize:46];
+    iconLbl.textAlignment = NSTextAlignmentCenter;
+    [self.view addSubview:iconLbl];
+    
+    // Title MAINTENANCE MODE
+    UILabel *titleLbl = [UILabel new];
+    titleLbl.translatesAutoresizingMaskIntoConstraints = NO;
+    titleLbl.text = @"MAINTENANCE MODE";
+    titleLbl.font = [UIFont systemFontOfSize:18 weight:UIFontWeightBlack];
+    titleLbl.textColor = [UIColor colorWithRed:0.95 green:0.10 blue:0.25 alpha:1.0];
+    titleLbl.textAlignment = NSTextAlignmentCenter;
+    titleLbl.layer.shadowColor = ZXRed.CGColor;
+    titleLbl.layer.shadowRadius = 8;
+    titleLbl.layer.shadowOpacity = 0.8;
+    titleLbl.layer.shadowOffset = CGSizeZero;
+    [self.view addSubview:titleLbl];
+    
+    // Glass Card Message Box (Photo 2 design)
+    UIView *card = ZXGlassView(16);
+    card.translatesAutoresizingMaskIntoConstraints = NO;
+    card.backgroundColor = [UIColor colorWithRed:0.08 green:0.02 blue:0.03 alpha:0.85];
+    card.layer.borderColor = [UIColor colorWithRed:0.95 green:0.1 blue:0.25 alpha:0.45].CGColor;
+    card.layer.borderWidth = 1.0;
+    [self.view addSubview:card];
+    
+    _statusMsg = [UILabel new];
+    _statusMsg.translatesAutoresizingMaskIntoConstraints = NO;
+    _statusMsg.text = self.message.length ? self.message : @"ipa is on maintenance wait for fix";
+    _statusMsg.font = [UIFont systemFontOfSize:14 weight:UIFontWeightMedium];
+    _statusMsg.textColor = [UIColor colorWithWhite:0.9 alpha:1.0];
+    _statusMsg.textAlignment = NSTextAlignmentCenter;
+    _statusMsg.numberOfLines = 4;
+    [card addSubview:_statusMsg];
+    
+    // Button 1: 🔄 Retry (Red Glass Button)
+    UIButton *retryBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+    retryBtn.translatesAutoresizingMaskIntoConstraints = NO;
+    retryBtn.backgroundColor = [UIColor colorWithRed:0.35 green:0.04 blue:0.1 alpha:0.85];
+    retryBtn.layer.cornerRadius = 18;
+    retryBtn.layer.borderColor = [UIColor colorWithRed:0.95 green:0.15 blue:0.3 alpha:0.7].CGColor;
+    retryBtn.layer.borderWidth = 1.2;
+    [retryBtn setTitle:@"🔄 Retry" forState:UIControlStateNormal];
+    [retryBtn setTitleColor:[UIColor colorWithRed:1.0 green:0.4 blue:0.55 alpha:1.0] forState:UIControlStateNormal];
+    retryBtn.titleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightBold];
+    [retryBtn addTarget:self action:@selector(retryTap) forControlEvents:UIControlEventTouchUpInside];
+    [self.view addSubview:retryBtn];
+    
+    // Button 2: 📢 Official Channel (Green Glass Button)
+    UIButton *chanBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+    chanBtn.translatesAutoresizingMaskIntoConstraints = NO;
+    chanBtn.backgroundColor = [UIColor colorWithRed:0.03 green:0.18 blue:0.06 alpha:0.85];
+    chanBtn.layer.cornerRadius = 18;
+    chanBtn.layer.borderColor = [UIColor colorWithRed:0.2 green:0.85 blue:0.4 alpha:0.7].CGColor;
+    chanBtn.layer.borderWidth = 1.2;
+    [chanBtn setTitle:@"📢 Official Channel" forState:UIControlStateNormal];
+    [chanBtn setTitleColor:[UIColor colorWithRed:0.3 green:0.95 blue:0.5 alpha:1.0] forState:UIControlStateNormal];
+    chanBtn.titleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightBold];
+    [chanBtn addTarget:self action:@selector(channelTap) forControlEvents:UIControlEventTouchUpInside];
+    [self.view addSubview:chanBtn];
+    
+    _sp = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleMedium];
+    _sp.translatesAutoresizingMaskIntoConstraints = NO;
+    _sp.color = ZXRed;
+    _sp.hidesWhenStopped = YES;
+    [self.view addSubview:_sp];
+    
+    // Footer label ZEX EXTERNAL
+    UILabel *foot = [UILabel new];
+    foot.translatesAutoresizingMaskIntoConstraints = NO;
+    foot.text = @"ZEX EXTERNAL";
+    foot.font = [UIFont monospacedSystemFontOfSize:10 weight:UIFontWeightBold];
+    foot.textColor = [UIColor colorWithWhite:1.0 alpha:0.25];
+    foot.textAlignment = NSTextAlignmentCenter;
+    [self.view addSubview:foot];
+    
+    [NSLayoutConstraint activateConstraints:@[
+        [iconLbl.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor constant:-140],
+        [iconLbl.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+        
+        [titleLbl.topAnchor constraintEqualToAnchor:iconLbl.bottomAnchor constant:12],
+        [titleLbl.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+        
+        [card.topAnchor constraintEqualToAnchor:titleLbl.bottomAnchor constant:22],
+        [card.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:24],
+        [card.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-24],
+        
+        [_statusMsg.topAnchor constraintEqualToAnchor:card.topAnchor constant:18],
+        [_statusMsg.bottomAnchor constraintEqualToAnchor:card.bottomAnchor constant:-18],
+        [_statusMsg.leadingAnchor constraintEqualToAnchor:card.leadingAnchor constant:16],
+        [_statusMsg.trailingAnchor constraintEqualToAnchor:card.trailingAnchor constant:-16],
+        
+        [retryBtn.topAnchor constraintEqualToAnchor:card.bottomAnchor constant:24],
+        [retryBtn.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:24],
+        [retryBtn.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-24],
+        [retryBtn.heightAnchor constraintEqualToConstant:54],
+        
+        [chanBtn.topAnchor constraintEqualToAnchor:retryBtn.bottomAnchor constant:14],
+        [chanBtn.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:24],
+        [chanBtn.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-24],
+        [chanBtn.heightAnchor constraintEqualToConstant:54],
+        
+        [_sp.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+        [_sp.topAnchor constraintEqualToAnchor:chanBtn.bottomAnchor constant:12],
+        
+        [foot.bottomAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.bottomAnchor constant:-16],
+        [foot.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+    ]];
+}
+
+-(void)retryTap {
+    [_sp startAnimating];
+    [ZXConfig fetch:^(ZXConfig *c, NSError *e) {
+        [self->_sp stopAnimating];
+        if (c && !c.maintenance) {
+            if (self.onRetrySuccess) self.onRetrySuccess();
+        } else {
+            if (c.maintMsg.length) self->_statusMsg.text = c.maintMsg;
+            CAKeyframeAnimation *shake = [CAKeyframeAnimation animationWithKeyPath:@"position.x"];
+            shake.values = @[@(0), @(-10), @(10), @(-6), @(6), @(0)];
+            shake.duration = 0.4;
+            shake.additive = YES;
+            [self.view.layer addAnimation:shake forKey:@"maint_shake"];
+        }
+    }];
+}
+
+-(void)channelTap {
+    NSString *urlStr = self.channelUrl.length ? self.channelUrl : @"https://whatsapp.com/channel/0029Vb7UASL3bbV7CzGzUb04";
+    NSURL *url = [NSURL URLWithString:urlStr];
+    if (url) {
+        [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:nil];
+    }
+}
+@end
+
 // ── ZEXInjectorVC ─────────────────────────────────────────────────
 @implementation ZEXInjectorVC
 -(UIStatusBarStyle)preferredStatusBarStyle{return UIStatusBarStyleLightContent;}
@@ -1989,65 +2171,43 @@ static void ZXApplyModernButton(UIButton *btn) {
     loader.autoresizingMask=UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
     ZXAddModernBackground(loader);
     
-    // Center Animated GIF Logo
-    UIImageView *gifView = [UIImageView new];
-    gifView.translatesAutoresizingMaskIntoConstraints = NO;
-    gifView.contentMode = UIViewContentModeScaleAspectFit;
-    gifView.layer.cornerRadius = 24;
-    gifView.layer.masksToBounds = YES;
-    gifView.layer.borderWidth = 1.2;
-    gifView.layer.borderColor = [UIColor colorWithRed:0.95 green:0.15 blue:0.3 alpha:0.6].CGColor;
-    gifView.layer.shadowColor = ZXRed.CGColor;
-    gifView.layer.shadowRadius = 16;
-    gifView.layer.shadowOpacity = 0.6;
-    gifView.layer.shadowOffset = CGSizeZero;
-    [loader addSubview:gifView];
-    
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        UIImage *gif = ZXLoadAnimatedGIF(@"GIF by Chandelier Creative.gif");
-        if (gif) {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                gifView.image = gif;
-            });
-        }
-    });
-    
-    UILabel*logo=[UILabel new];logo.translatesAutoresizingMaskIntoConstraints=NO;
-    NSMutableAttributedString*as=[[NSMutableAttributedString alloc]initWithString:@"ZEX EXTERNAL"];
-    [as addAttribute:NSForegroundColorAttributeName value:ZXRed range:NSMakeRange(0,3)];
-    [as addAttribute:NSForegroundColorAttributeName value:UIColor.whiteColor range:NSMakeRange(3,9)];
-    [as addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:24 weight:UIFontWeightHeavy] range:NSMakeRange(0,12)];
-    [as addAttribute:NSKernAttributeName value:@2.0 range:NSMakeRange(0,12)];
-    logo.attributedText=as;logo.textAlignment=NSTextAlignmentCenter;
-    [loader addSubview:logo];
-    
-    UIView*badge=ZXGlassView(10);badge.translatesAutoresizingMaskIntoConstraints=NO;
-    badge.backgroundColor=[UIColor colorWithRed:0.14 green:0.02 blue:0.04 alpha:0.85];
-    badge.layer.borderColor=[UIColor colorWithRed:1.0 green:0.25 blue:0.4 alpha:0.45].CGColor;
-    badge.layer.borderWidth=0.8;badge.layer.cornerRadius=10;[loader addSubview:badge];
+    // Pill Badge INITIALIZING RUNTIME (Photo 1 design at bottom)
+    UIView*badge=ZXGlassView(12);badge.translatesAutoresizingMaskIntoConstraints=NO;
+    badge.backgroundColor=[UIColor colorWithRed:0.18 green:0.02 blue:0.05 alpha:0.85];
+    badge.layer.borderColor=[UIColor colorWithRed:1.0 green:0.25 blue:0.4 alpha:0.55].CGColor;
+    badge.layer.borderWidth=0.8;badge.layer.cornerRadius=12;
+    [loader addSubview:badge];
     
     UIView*dot=[UIView new];dot.translatesAutoresizingMaskIntoConstraints=NO;
     dot.backgroundColor=[UIColor colorWithRed:0.2 green:0.9 blue:0.4 alpha:1.0];
-    dot.layer.cornerRadius=3.5;
+    dot.layer.cornerRadius=4.0;
     [badge addSubview:dot];
     
     UILabel*badgeLbl=[UILabel new];badgeLbl.translatesAutoresizingMaskIntoConstraints=NO;
-    badgeLbl.text=@"INITIALIZING RUNTIME";badgeLbl.font=[UIFont monospacedSystemFontOfSize:9 weight:UIFontWeightBold];
-    badgeLbl.textColor=[UIColor colorWithRed:1.0 green:0.4 blue:0.55 alpha:1.0];[badge addSubview:badgeLbl];
+    badgeLbl.text=@"INITIALIZING RUNTIME";
+    badgeLbl.font=[UIFont monospacedSystemFontOfSize:9.5 weight:UIFontWeightBold];
+    badgeLbl.textColor=[UIColor colorWithRed:1.0 green:0.4 blue:0.55 alpha:1.0];
+    [badge addSubview:badgeLbl];
     
+    // Subtitle Line 1: 📱 IPHONE • iOS X.X • ROOTLESS
     UILabel*devLoad=[UILabel new];devLoad.translatesAutoresizingMaskIntoConstraints=NO;
     NSString *model = [UIDevice currentDevice].model;
     NSString *osVer = [UIDevice currentDevice].systemVersion;
     devLoad.text=[NSString stringWithFormat:@"📱 %@ • iOS %@ • ROOTLESS", model.uppercaseString, osVer];
     devLoad.font=[UIFont monospacedSystemFontOfSize:9.5 weight:UIFontWeightBold];
     devLoad.textColor=[UIColor colorWithRed:0.25 green:0.88 blue:0.45 alpha:0.95];
-    devLoad.textAlignment=NSTextAlignmentCenter;[loader addSubview:devLoad];
+    devLoad.textAlignment=NSTextAlignmentCenter;
+    [loader addSubview:devLoad];
     
+    // Subtitle Line 2: > [04/04] ALL SYSTEMS ARMED & READY_
     UILabel*sub=[UILabel new];sub.translatesAutoresizingMaskIntoConstraints=NO;
     sub.text=@"> [01/04] INITIALIZING SYSTEM KERNEL...";
-    sub.font=[UIFont monospacedSystemFontOfSize:10 weight:UIFontWeightBold];
-    sub.textColor=[UIColor colorWithWhite:1 alpha:.8];sub.textAlignment=NSTextAlignmentCenter;[loader addSubview:sub];
+    sub.font=[UIFont monospacedSystemFontOfSize:10.5 weight:UIFontWeightBold];
+    sub.textColor=[UIColor colorWithRed:0.25 green:0.88 blue:0.45 alpha:0.95];
+    sub.textAlignment=NSTextAlignmentCenter;
+    [loader addSubview:sub];
     
+    // Progress Bar Track at bottom
     UIView*pTrack=[UIView new];pTrack.translatesAutoresizingMaskIntoConstraints=NO;
     pTrack.backgroundColor=[UIColor colorWithWhite:0 alpha:0.6];
     pTrack.layer.cornerRadius=3.5;pTrack.clipsToBounds=YES;
@@ -2060,7 +2220,7 @@ static void ZXApplyModernButton(UIButton *btn) {
     [pTrack addSubview:pBar];
     
     CAGradientLayer*barGrad=[CAGradientLayer layer];
-    barGrad.frame=CGRectMake(0,0,240,7);
+    barGrad.frame=CGRectMake(0,0,260,7);
     barGrad.colors=@[(id)[UIColor colorWithRed:1.0 green:0.25 blue:0.4 alpha:1].CGColor, (id)ZXRed.CGColor];
     barGrad.startPoint=CGPointMake(0,0.5);barGrad.endPoint=CGPointMake(1,0.5);
     [pBar.layer insertSublayer:barGrad atIndex:0];
@@ -2068,34 +2228,26 @@ static void ZXApplyModernButton(UIButton *btn) {
     NSLayoutConstraint*pWidth=[pBar.widthAnchor constraintEqualToConstant:20];
     
     [NSLayoutConstraint activateConstraints:@[
-        [gifView.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
-        [gifView.centerYAnchor constraintEqualToAnchor:loader.centerYAnchor constant:-85],
-        [gifView.widthAnchor constraintEqualToConstant:78],
-        [gifView.heightAnchor constraintEqualToConstant:78],
-        
-        [logo.topAnchor constraintEqualToAnchor:gifView.bottomAnchor constant:12],
-        [logo.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
-        
-        [badge.topAnchor constraintEqualToAnchor:logo.bottomAnchor constant:10],
+        [badge.bottomAnchor constraintEqualToAnchor:devLoad.topAnchor constant:-8],
         [badge.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
-        [dot.leadingAnchor constraintEqualToAnchor:badge.leadingAnchor constant:10],
+        [dot.leadingAnchor constraintEqualToAnchor:badge.leadingAnchor constant:12],
         [dot.centerYAnchor constraintEqualToAnchor:badge.centerYAnchor],
-        [dot.widthAnchor constraintEqualToConstant:7],
-        [dot.heightAnchor constraintEqualToConstant:7],
+        [dot.widthAnchor constraintEqualToConstant:8],
+        [dot.heightAnchor constraintEqualToConstant:8],
         [badgeLbl.leadingAnchor constraintEqualToAnchor:dot.trailingAnchor constant:6],
-        [badgeLbl.trailingAnchor constraintEqualToAnchor:badge.trailingAnchor constant:-10],
-        [badgeLbl.topAnchor constraintEqualToAnchor:badge.topAnchor constant:4],
-        [badgeLbl.bottomAnchor constraintEqualToAnchor:badge.bottomAnchor constant:-4],
+        [badgeLbl.trailingAnchor constraintEqualToAnchor:badge.trailingAnchor constant:-12],
+        [badgeLbl.topAnchor constraintEqualToAnchor:badge.topAnchor constant:5],
+        [badgeLbl.bottomAnchor constraintEqualToAnchor:badge.bottomAnchor constant:-5],
         
-        [devLoad.topAnchor constraintEqualToAnchor:badge.bottomAnchor constant:8],
+        [devLoad.bottomAnchor constraintEqualToAnchor:sub.topAnchor constant:-8],
         [devLoad.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
         
         [sub.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
-        [sub.topAnchor constraintEqualToAnchor:devLoad.bottomAnchor constant:14],
+        [sub.bottomAnchor constraintEqualToAnchor:pTrack.topAnchor constant:-12],
         
         [pTrack.centerXAnchor constraintEqualToAnchor:loader.centerXAnchor],
-        [pTrack.topAnchor constraintEqualToAnchor:sub.bottomAnchor constant:16],
-        [pTrack.widthAnchor constraintEqualToConstant:200],
+        [pTrack.bottomAnchor constraintEqualToAnchor:loader.safeAreaLayoutGuide.bottomAnchor constant:-16],
+        [pTrack.widthAnchor constraintEqualToConstant:240],
         [pTrack.heightAnchor constraintEqualToConstant:7],
         
         [pBar.leadingAnchor constraintEqualToAnchor:pTrack.leadingAnchor],
@@ -2108,32 +2260,56 @@ static void ZXApplyModernButton(UIButton *btn) {
     ZXAddFallingParticles(loader);
 
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 250 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
-        pWidth.constant = 95;
+        pWidth.constant = 110;
         [UIView animateWithDuration:0.4 animations:^{ [loader layoutIfNeeded]; }];
         sub.text = @"> [02/04] ESCAPING SANDBOX CONTAINERS...";
     });
     
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 600 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
-        pWidth.constant = 160;
+        pWidth.constant = 180;
         [UIView animateWithDuration:0.35 animations:^{ [loader layoutIfNeeded]; }];
         sub.text = @"> [03/04] CONNECTING TO SECURE AUTH NODE...";
     });
     
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 950 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
-        pWidth.constant = 200;
+        pWidth.constant = 240;
         [UIView animateWithDuration:0.25 animations:^{ [loader layoutIfNeeded]; }];
         sub.text = @"> [04/04] ALL SYSTEMS ARMED & READY_";
         sub.textColor = ZXGreen;
     });
     
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1250 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
-        [self showAuth];
-        [UIView animateWithDuration:0.3 animations:^{
-            loader.alpha = 0;
-        } completion:^(BOOL f){
-            [loader removeFromSuperview];
+        [ZXConfig fetch:^(ZXConfig *c, NSError *e) {
+            if (c && c.maintenance) {
+                [self showMaintenanceWithMessage:c.maintMsg channel:c.officialChannel];
+                [loader removeFromSuperview];
+            } else {
+                [self showAuth];
+                [UIView animateWithDuration:0.3 animations:^{
+                    loader.alpha = 0;
+                } completion:^(BOOL f){
+                    [loader removeFromSuperview];
+                }];
+            }
         }];
     });
+}
+
+-(void)showMaintenanceWithMessage:(NSString*)msg channel:(NSString*)chan {
+    for(UIViewController*c in self.childViewControllers){[c willMoveToParentViewController:nil];[c.view removeFromSuperview];[c removeFromParentViewController];}
+    ZXMaintenanceVC *m = [ZXMaintenanceVC new];
+    m.message = msg;
+    m.channelUrl = chan;
+    __weak typeof(self) ws = self;
+    m.onRetrySuccess = ^{
+        [ws showLoadingScreen];
+    };
+    [self addChildViewController:m];
+    m.view.frame = self.view.bounds;
+    m.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    [self.view insertSubview:m.view atIndex:0];
+    [m didMoveToParentViewController:self];
+    [self setNeedsStatusBarAppearanceUpdate];
 }
 -(void)showAuth{
     for(UIViewController*c in self.childViewControllers){[c willMoveToParentViewController:nil];[c.view removeFromSuperview];[c removeFromParentViewController];}
